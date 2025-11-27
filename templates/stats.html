@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ ar.stats_page }} - {{ ar.app_title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <a href="/">
+                    <img src="{{ url_for('static', filename='logo.png') }}" alt="Elite League" class="logo-img">
+                </a>
+                <div class="logo-text">
+                    <span class="logo-title">دوري النخبة</span>
+                    <span class="logo-subtitle">ELITE LEAGUE</span>
+                </div>
+            </div>
+            <div class="gameweek-info">
+                <span class="gw-label">{{ ar.gameweek }}</span>
+                <span class="gw-number">{{ data.gameweek or '-' }}</span>
+                <a href="/" class="back-link">{{ ar.back_to_home }} ←</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        {% if not data.success %}
+            <div class="error-box">
+                <h2>⚠️ {{ ar.error }}</h2>
+                <p>{{ data.error }}</p>
+            </div>
+        {% else %}
+            <!-- Page Title -->
+            <div class="page-title">
+                <h1>📊 {{ ar.stats_page }}</h1>
+                <p>{{ ar.gameweek }} {{ data.gameweek }} - {{ data.total_managers }} {{ ar.manager }}</p>
+            </div>
+            
+            <div class="stats-grid single-column">
+                <!-- Points Stats -->
+                <section class="stats-section points-section">
+                    <h2 class="section-title">📈 {{ ar.points_stats }}</h2>
+                    <div class="points-stats-grid-simple">
+                        <div class="stat-card danger-card">
+                            <span class="stat-emoji">🪤</span>
+                            <span class="stat-label">{{ ar.minimum }}</span>
+                            <span class="stat-value">{{ data.points_stats.min }}</span>
+                            <span class="stat-players-big">
+                                {% for manager in data.points_stats.min_managers %}
+                                    {{ manager }}{% if not loop.last %}، {% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                        <div class="stat-card highlight">
+                            <span class="stat-emoji">📊</span>
+                            <span class="stat-label">{{ ar.average }}</span>
+                            <span class="stat-value">{{ data.points_stats.avg }}</span>
+                        </div>
+                        <div class="stat-card success-card">
+                            <span class="stat-emoji">👑</span>
+                            <span class="stat-label">{{ ar.maximum }}</span>
+                            <span class="stat-value">{{ data.points_stats.max }}</span>
+                            <span class="stat-players-big">
+                                {% for manager in data.points_stats.max_managers %}
+                                    {{ manager }}{% if not loop.last %}، {% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                        <div class="stat-card lucky-card">
+                            <span class="stat-emoji">🍀</span>
+                            <span class="stat-label">{{ ar.lucky }}</span>
+                            <span class="stat-value">{{ data.points_stats.lucky_points if data.points_stats.lucky_points else '-' }}</span>
+                            <span class="stat-players-big">{{ data.points_stats.lucky_manager or '-' }}</span>
+                        </div>
+                        <div class="stat-card unlucky-card">
+                            <span class="stat-emoji">😢</span>
+                            <span class="stat-label">{{ ar.unlucky }}</span>
+                            <span class="stat-value">{{ data.points_stats.unlucky_points if data.points_stats.unlucky_points else '-' }}</span>
+                            <span class="stat-players-big">{{ data.points_stats.unlucky_manager or '-' }}</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-emoji">🏆</span>
+                            <span class="stat-label">{{ ar.best_rank }}</span>
+                            <span class="stat-value">{{ "{:,}".format(data.points_stats.best_rank) if data.points_stats.best_rank else '-' }}</span>
+                            <span class="stat-players-big">
+                                {% for manager in data.points_stats.best_rank_managers %}
+                                    {{ manager }}{% if not loop.last %}، {% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-emoji">📉</span>
+                            <span class="stat-label">{{ ar.worst_rank }}</span>
+                            <span class="stat-value">{{ "{:,}".format(data.points_stats.worst_rank) if data.points_stats.worst_rank else '-' }}</span>
+                            <span class="stat-players-big">
+                                {% for manager in data.points_stats.worst_rank_managers %}
+                                    {{ manager }}{% if not loop.last %}، {% endif %}
+                                {% endfor %}
+                            </span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Three columns: Captaincy, Chips, Effective Ownership -->
+                <div class="stats-three-columns">
+                    <!-- Captaincy Stats -->
+                    <section class="stats-section">
+                        <h2 class="section-title">👑 {{ ar.captaincy_stats }}</h2>
+                        <div class="stats-table-container">
+                            <table class="stats-table compact">
+                                <thead>
+                                    <tr>
+                                        <th>{{ ar.captain_name }}</th>
+                                        <th>{{ ar.captain_count }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for captain in data.captain_stats %}
+                                    <tr>
+                                        <td class="name-cell">{{ captain.name }}</td>
+                                        <td class="count-cell">
+                                            <span class="count-badge">{{ captain.count }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Chips Used -->
+                    <section class="stats-section">
+                        <h2 class="section-title">⚡ {{ ar.chips_stats }}</h2>
+                        {% if data.chips_used %}
+                        <div class="stats-table-container">
+                            <table class="stats-table compact">
+                                <thead>
+                                    <tr>
+                                        <th>{{ ar.used_by }}</th>
+                                        <th>{{ ar.chip_name }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for chip in data.chips_used %}
+                                    <tr>
+                                        <td class="name-cell">
+                                            <a href="https://fantasy.premierleague.com/entry/{{ chip.entry_id }}/event/{{ data.gameweek }}" target="_blank" class="manager-link">{{ chip.manager }}</a>
+                                        </td>
+                                        <td class="chip-cell">
+                                            <span class="chip-badge active">{{ chip.chip_ar }}</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="no-data">{{ ar.no_chips }}</div>
+                        {% endif %}
+                    </section>
+
+                    <!-- Effective Ownership -->
+                    <section class="stats-section">
+                        <h2 class="section-title">📊 {{ ar.effective_ownership }}</h2>
+                        <div class="stats-table-container">
+                            <table class="stats-table compact">
+                                <thead>
+                                    <tr>
+                                        <th>{{ ar.player_name }}</th>
+                                        <th>{{ ar.eo_percentage }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for player in data.effective_ownership %}
+                                    <tr>
+                                        <td class="name-cell">{{ player.name }} <span class="team-tag">{{ player.team }}</span></td>
+                                        <td class="percentage-cell-compact">
+                                            <span class="percentage-badge">{{ player.percentage }}%</span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            
+            <!-- Manager Comparison Section -->
+            <section class="stats-section comparison-section">
+                <h2 class="section-title">📈 {{ ar.comparison }}</h2>
+                
+                <div class="comparison-controls">
+                    <div class="control-group">
+                        <label>{{ ar.comparison_type }}</label>
+                        <select id="comparison-type" class="comparison-select">
+                            <option value="points">{{ ar.points_comparison }}</option>
+                            <option value="ranks">{{ ar.rank_comparison }}</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>{{ ar.select_manager_1 }}</label>
+                        <select id="manager-1" class="comparison-select">
+                            <option value="">-- {{ ar.select_manager_1 }} --</option>
+                        </select>
+                    </div>
+                    
+                    <div class="control-group">
+                        <label>{{ ar.select_manager_2 }}</label>
+                        <select id="manager-2" class="comparison-select">
+                            <option value="">-- {{ ar.select_manager_2 }} --</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div id="loading-indicator" class="loading-indicator" style="display: none;">
+                    {{ ar.loading_data }}
+                </div>
+                
+                <div class="chart-container">
+                    <canvas id="comparison-chart"></canvas>
+                </div>
+            </section>
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>{{ ar.copyright }}</p>
+        <p class="timestamp" id="timestamp"></p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Update timestamp with English numbers
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('timestamp').textContent = '{{ ar.last_updated }}: ' + timeStr;
+        
+        // Comparison Chart
+        let comparisonData = null;
+        let comparisonChart = null;
+        
+        // Fetch comparison data
+        async function fetchComparisonData() {
+            document.getElementById('loading-indicator').style.display = 'block';
+            try {
+                const response = await fetch('/api/comparison');
+                comparisonData = await response.json();
+                
+                if (comparisonData.success) {
+                    populateManagerDropdowns();
+                }
+            } catch (error) {
+                console.error('Error fetching comparison data:', error);
+            }
+            document.getElementById('loading-indicator').style.display = 'none';
+        }
+        
+        // Populate manager dropdowns
+        function populateManagerDropdowns() {
+            const manager1Select = document.getElementById('manager-1');
+            const manager2Select = document.getElementById('manager-2');
+            
+            comparisonData.managers.forEach(manager => {
+                const option1 = document.createElement('option');
+                option1.value = manager.name;
+                option1.textContent = manager.name;
+                manager1Select.appendChild(option1);
+                
+                const option2 = document.createElement('option');
+                option2.value = manager.name;
+                option2.textContent = manager.name;
+                manager2Select.appendChild(option2);
+            });
+        }
+        
+        // Update chart
+        function updateChart() {
+            const comparisonType = document.getElementById('comparison-type').value;
+            const manager1 = document.getElementById('manager-1').value;
+            const manager2 = document.getElementById('manager-2').value;
+            
+            if (!manager1 || !manager2 || !comparisonData) return;
+            
+            const data = comparisonType === 'points' ? comparisonData.points_data : comparisonData.ranks_data;
+            const gameweeks = comparisonData.gameweeks;
+            
+            const manager1Data = gameweeks.map(gw => data[manager1]?.[gw] || null);
+            const manager2Data = gameweeks.map(gw => data[manager2]?.[gw] || null);
+            
+            const ctx = document.getElementById('comparison-chart').getContext('2d');
+            
+            if (comparisonChart) {
+                comparisonChart.destroy();
+            }
+            
+            comparisonChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: gameweeks.map(gw => gw.toString()),
+                    datasets: [
+                        {
+                            label: manager1,
+                            data: manager1Data,
+                            borderColor: '#4a1259',
+                            backgroundColor: 'rgba(74, 18, 89, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 6,
+                            pointBackgroundColor: '#4a1259',
+                            tension: 0.1
+                        },
+                        {
+                            label: manager2,
+                            data: manager2Data,
+                            borderColor: '#ffd700',
+                            backgroundColor: 'rgba(255, 215, 0, 0.1)',
+                            borderWidth: 3,
+                            pointRadius: 6,
+                            pointBackgroundColor: '#ffd700',
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 14,
+                                    family: 'Cairo'
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: comparisonType === 'points' ? '{{ ar.points_comparison }}' : '{{ ar.rank_comparison }}',
+                            font: {
+                                size: 18,
+                                family: 'Cairo'
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '{{ ar.gw_label }}',
+                                font: {
+                                    size: 14,
+                                    family: 'Cairo'
+                                }
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: comparisonType === 'points' ? '{{ ar.points_label }}' : '{{ ar.rank_label }}',
+                                font: {
+                                    size: 14,
+                                    family: 'Cairo'
+                                }
+                            },
+                            reverse: comparisonType === 'ranks',
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Event listeners
+        document.getElementById('comparison-type').addEventListener('change', updateChart);
+        document.getElementById('manager-1').addEventListener('change', updateChart);
+        document.getElementById('manager-2').addEventListener('change', updateChart);
+        
+        // Initialize
+        fetchComparisonData();
+    </script>
+</body>
+</html>

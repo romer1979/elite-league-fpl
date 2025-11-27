@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ ar.app_title }} - {{ ar.fpl_tracker }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="Elite League" class="logo-img">
+                <div class="logo-text">
+                    <span class="logo-title">دوري النخبة</span>
+                    <span class="logo-subtitle">ELITE LEAGUE</span>
+                </div>
+            </div>
+            <div class="gameweek-info">
+                <span class="gw-label">{{ ar.gameweek }}</span>
+                <span class="gw-number">{{ data.gameweek or '-' }}</span>
+                {% if data.gw_finished %}
+                    <span class="status-badge finished">✅ {{ ar.finished }}</span>
+                {% elif data.is_live %}
+                    <span class="status-badge live">🔴 {{ ar.live }}</span>
+                {% elif data.showing_previous_gw %}
+                    <span class="status-badge not-started">⏳ {{ ar.not_started }}</span>
+                {% else %}
+                    <span class="status-badge">{{ ar.in_progress }}</span>
+                {% endif %}
+                <button class="refresh-btn" onclick="refreshDashboard()" id="refresh-btn">🔄</button>
+                <a href="/stats" class="stats-link">📊 {{ ar.stats }}</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        {% if not data.success %}
+            <div class="error-box">
+                <h2>⚠️ {{ ar.error }}</h2>
+                <p>{{ data.error }}</p>
+            </div>
+        {% else %}
+            <div class="dashboard-grid">
+                <!-- Fixtures Section -->
+                <section class="fixtures-section">
+                    <h2 class="section-title">
+                        ⚔️ {{ ar.fixtures }}
+                        {% if data.is_live %}
+                            <span class="live-badge">🔴 {{ ar.live }}</span>
+                        {% elif data.showing_previous_gw %}
+                            <span class="prev-gw-badge">{{ ar.gameweek }} {{ data.display_gameweek }}</span>
+                        {% elif data.gw_finished %}
+                            <span class="finished-badge">{{ ar.gameweek }} {{ data.display_gameweek }}</span>
+                        {% endif %}
+                    </h2>
+                    
+                    {% if data.fixtures %}
+                        <div class="fixtures-table-container">
+                            <table class="fixtures-table">
+                                <thead>
+                                    <tr>
+                                        <th>{{ ar.team_1 }}</th>
+                                        <th>{{ ar.score }}</th>
+                                        <th>{{ ar.team_2 }}</th>
+                                        <th>{{ ar.points_diff }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for match in data.fixtures %}
+                                    <tr class="fixture-row">
+                                        <td class="team-cell {% if match.winner == 1 %}winner{% endif %}">
+                                            <div class="team-info-cell">
+                                                <span class="team-name">
+                                                    {% if match.winner == 1 %}<span class="winner-icon">✓</span>{% endif %}
+                                                    <a href="https://fantasy.premierleague.com/entry/{{ match.entry_1 }}/event/{{ data.gameweek }}" target="_blank" class="manager-link">{{ match.team_1_name }}</a>
+                                                </span>
+                                                <span class="team-details">
+                                                    <span class="captain-badge" title="{{ ar.captain }}">👑 {{ match.team_1_captain }}</span>
+                                                    <span class="chip-badge {% if match.team_1_chip_active %}active{% else %}inactive{% endif %}">
+                                                        {{ match.team_1_chip }}
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="score-cell">
+                                            <span class="score {% if match.winner == 1 %}score-win{% endif %}">{{ match.team_1_points }}</span>
+                                            <span class="vs">-</span>
+                                            <span class="score {% if match.winner == 2 %}score-win{% endif %}">{{ match.team_2_points }}</span>
+                                        </td>
+                                        <td class="team-cell {% if match.winner == 2 %}winner{% endif %}">
+                                            <div class="team-info-cell">
+                                                <span class="team-name">
+                                                    {% if match.winner == 2 %}<span class="winner-icon">✓</span>{% endif %}
+                                                    <a href="https://fantasy.premierleague.com/entry/{{ match.entry_2 }}/event/{{ data.gameweek }}" target="_blank" class="manager-link">{{ match.team_2_name }}</a>
+                                                </span>
+                                                <span class="team-details">
+                                                    <span class="captain-badge" title="{{ ar.captain }}">👑 {{ match.team_2_captain }}</span>
+                                                    <span class="chip-badge {% if match.team_2_chip_active %}active{% else %}inactive{% endif %}">
+                                                        {{ match.team_2_chip }}
+                                                    </span>
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td class="diff-cell">
+                                            <span class="diff-badge">{{ match.points_diff }}</span>
+                                            <button class="toggle-unique-btn" onclick="toggleUnique({{ loop.index }})">▼</button>
+                                        </td>
+                                    </tr>
+                                    <tr class="unique-players-row" id="unique-row-{{ loop.index }}" style="display: none;">
+                                        <td colspan="4">
+                                            <div class="unique-players-container">
+                                                <div class="unique-team unique-team-1">
+                                                    <span class="unique-label">{{ match.team_1_name }}:</span>
+                                                    <div class="unique-players-list">
+                                                        {% for player in match.team_1_unique %}
+                                                            <span class="unique-player-tag status-{{ player.status }}">{{ player.name }}</span>
+                                                        {% else %}
+                                                            <span class="no-unique">-</span>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                                <div class="unique-team unique-team-2">
+                                                    <span class="unique-label">{{ match.team_2_name }}:</span>
+                                                    <div class="unique-players-list">
+                                                        {% for player in match.team_2_unique %}
+                                                            <span class="unique-player-tag status-{{ player.status }}">{{ player.name }}</span>
+                                                        {% else %}
+                                                            <span class="no-unique">-</span>
+                                                        {% endfor %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="no-data">لا توجد مباريات</div>
+                    {% endif %}
+                </section>
+
+                <!-- Standings Section -->
+                <section class="standings-section">
+                    <h2 class="section-title">
+                        📊 {% if data.is_live %}{{ ar.live_standings }}{% else %}{{ ar.standings }}{% endif %}
+                        {% if data.is_live %}
+                            <span class="live-badge">🔴 {{ ar.live }}</span>
+                        {% endif %}
+                    </h2>
+                    {% include 'partials/standings_table.html' %}
+                </section>
+            </div>
+        {% endif %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>{{ ar.copyright }}</p>
+        {% if data.is_live %}
+            <p class="refresh-note">🔄 {{ ar.auto_refresh }}</p>
+        {% endif %}
+        <p class="timestamp" id="timestamp"></p>
+    </footer>
+
+    <script>
+        // Toggle unique players row
+        function toggleUnique(index) {
+            const row = document.getElementById('unique-row-' + index);
+            const btn = event.target;
+            if (row.style.display === 'none') {
+                row.style.display = 'table-row';
+                btn.textContent = '▲';
+                btn.classList.add('active');
+            } else {
+                row.style.display = 'none';
+                btn.textContent = '▼';
+                btn.classList.remove('active');
+            }
+        }
+        
+        // Refresh dashboard
+        function refreshDashboard() {
+            const btn = document.getElementById('refresh-btn');
+            btn.classList.add('spinning');
+            btn.disabled = true;
+            location.reload();
+        }
+        
+        // Auto-refresh every 60 seconds if live
+        {% if data.is_live %}
+        setTimeout(() => location.reload(), 60000);
+        {% endif %}
+        
+        // Update timestamp with English numbers
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('timestamp').textContent = '{{ ar.last_updated }}: ' + timeStr;
+    </script>
+</body>
+</html>

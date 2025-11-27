@@ -1,0 +1,66 @@
+<div class="standings-table-container">
+    <table class="standings-table">
+        <thead>
+            <tr>
+                <th class="col-rank">{{ ar.rank }}</th>
+                <th class="col-change">{{ ar.change }}</th>
+                <th class="col-name">{{ ar.manager }}</th>
+                <th class="col-points">{{ ar.league_points }}</th>
+                <th class="col-points">{{ ar.gw_points }}</th>
+                <th class="col-points">{{ ar.total_points }}</th>
+                <th class="col-rank">{{ ar.overall_rank }}</th>
+                <th class="col-captain">{{ ar.captain }}</th>
+                <th class="col-chip">{{ ar.chip }}</th>
+                {% if data.is_live %}
+                    <th class="col-result">{{ ar.result }}</th>
+                    <th class="col-opponent">{{ ar.opponent }}</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for team in data.standings %}
+            <tr class="{% if loop.index <= 3 %}top-three{% endif %} {% if team.result == 'W' %}row-win{% elif team.result == 'L' %}row-loss{% endif %}">
+                <td class="col-rank">
+                    {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ team.rank }}{% endif %}
+                </td>
+                <td class="col-change">
+                    {% if team.rank_change and team.rank_change > 0 %}
+                        <span class="rank-up">↑{{ team.rank_change }}</span>
+                    {% elif team.rank_change and team.rank_change < 0 %}
+                        <span class="rank-down">↓{{ team.rank_change|abs }}</span>
+                    {% else %}
+                        <span class="rank-same">–</span>
+                    {% endif %}
+                </td>
+                <td class="col-name">
+                    <a href="https://fantasy.premierleague.com/entry/{{ team.entry_id }}/event/{{ data.gameweek }}" target="_blank" class="manager-link">{{ team.player_name }}</a>
+                </td>
+                <td class="col-points highlight">{{ team.projected_league_points }}</td>
+                <td class="col-points">{{ team.current_gw_points or '-' }}</td>
+                <td class="col-points">{{ '{:,}'.format(team.total_points) if team.total_points else '-' }}</td>
+                <td class="col-rank">{{ '{:,}'.format(team.overall_rank) if team.overall_rank else '-' }}</td>
+                <td class="col-captain">{{ team.captain or '-' }}</td>
+                <td class="col-chip">
+                    <span class="chip-badge {% if team.chip_active %}active{% else %}inactive{% endif %}">
+                        {{ team.chip or '-' }}
+                    </span>
+                </td>
+                {% if data.is_live %}
+                    <td class="col-result">
+                        {% if team.result == 'W' %}
+                            <span class="result-win">🟢 {{ ar.winner }}</span>
+                        {% elif team.result == 'L' %}
+                            <span class="result-loss">🔴 {{ ar.loser }}</span>
+                        {% elif team.result == 'D' %}
+                            <span class="result-draw">🟡 {{ ar.draw }}</span>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="col-opponent">{{ team.opponent or '-' }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

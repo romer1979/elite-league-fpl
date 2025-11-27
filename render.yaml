@@ -1,0 +1,25 @@
+# Render Blueprint for Elite League FPL App
+# https://render.com/docs/blueprint-spec
+
+databases:
+  - name: elite-league-db
+    databaseName: elite_league
+    user: elite_league_user
+    plan: free  # Change to 'starter' for paid tier
+
+services:
+  - type: web
+    name: elite-league
+    env: python
+    plan: free  # Change to 'starter' for paid tier
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: elite-league-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: 3.11.0

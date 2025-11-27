@@ -1,0 +1,146 @@
+# -*- coding: utf-8 -*-
+"""
+Elite League Configuration
+"""
+
+# League ID for your H2H league
+LEAGUE_ID = 639056
+
+# Authentication cookies (update with your valid values)
+COOKIES = {
+    'sessionid': '.eJxVy8sKwjAQheF3yVpK0slkGnfuBQvFdchlQsRSirGr4rub7nR5-M6_C-e3d3Fb5Zd7JHEWWg-STA_i9EvKxycvh69zXufukG683pvVabpd2vwPiq-lva0BDRisIsZkjAWTWSlMUcoUiXXikFX2IXuK_UBRNidCVIxAVoL4fAH7WjMU:1qdKWX:gscU4n3NXCVKZVKm-TyQDyAFAvERsssnflInEj63Bxw',
+    'csrftoken': 'bdkplQaYzsHYN6FZOM8u1BNVZtbLixic'
+}
+
+# Postponed games (update as needed)
+POSTPONED_GAMES = {}
+
+# Players to exclude from standings (if any)
+EXCLUDED_PLAYERS = ["Mustafa Elessawi"]
+
+# API Base URLs
+FPL_BASE_URL = "https://fantasy.premierleague.com/api"
+
+# Arabic Translations
+ARABIC = {
+    # Main titles
+    'app_title': 'دوري النخبة',
+    'elite_league': 'ELITE LEAGUE',
+    'fpl_tracker': 'فانتازي الدوري الإنجليزي',
+    
+    # Navigation & Status
+    'live': 'مباشر',
+    'gameweek': 'الجولة',
+    'current_gameweek': 'الجولة الحالية',
+    'not_started': 'لم تبدأ',
+    'finished': 'انتهت',
+    'in_progress': 'جارية',
+    
+    # Fixtures Table
+    'fixtures': 'جدول المباريات',
+    'h2h_matches': 'جدول المباريات',
+    'last_gw_matches': 'مباريات الجولة السابقة',
+    'team_1': 'المدرب الأول',
+    'team_2': 'المدرب الثاني',
+    'score': 'النتيجة',
+    'points_diff': 'الفارق',
+    'vs': 'ضد',
+    'winner': 'فائز',
+    'loser': 'خاسر',
+    'draw': 'تعادل',
+    
+    # Standings Table
+    'standings': 'ترتيب الدوري',
+    'live_standings': 'الترتيب المباشر',
+    'final_standings': 'ترتيب الدوري',
+    'rank': 'م',
+    'change': 'التغيير',
+    'manager': 'المدرب',
+    'team_name': 'اسم الفريق',
+    'league_points': 'نقاط الدوري',
+    'gw_points': 'نقاط الجولة',
+    'total_points': 'مجموع النقاط',
+    'overall_rank': 'الترتيب العام',
+    'captain': 'الكابتن',
+    'chip': 'الخاصية',
+    'result': 'النتيجة',
+    'opponent': 'الخصم',
+    
+    # Chips
+    'wildcard': 'وايلد كارد',
+    'freehit': 'فري هيت',
+    'bench_boost': 'بنش بوست',
+    'triple_captain': 'تريبل كابتن',
+    'assistant_manager': 'المدير المساعد',
+    'no_chip': 'بدون خاصية',
+    
+    # Status messages
+    'gw_not_started': 'الجولة لم تبدأ بعد',
+    'loading': 'جاري التحميل...',
+    'error': 'خطأ',
+    'auto_refresh': 'تحديث تلقائي كل 60 ثانية',
+    'last_updated': 'آخر تحديث',
+    
+    # Footer
+    'copyright': '© جميع الحقوق محفوظة لـ ربيع الشتيوي',
+    
+    # Stats Page
+    'stats': 'الإحصائيات',
+    'stats_page': 'إحصائيات الدوري',
+    'captaincy_stats': 'إحصائيات الكابتن',
+    'captain_name': 'اسم اللاعب',
+    'captain_count': 'عدد مرات الاختيار',
+    'chips_stats': 'الخصائص المستخدمة',
+    'chip_name': 'الخاصية',
+    'used_by': 'المدرب',
+    'no_chips': 'لا توجد خصائص مستخدمة',
+    'points_stats': 'إحصائيات النقاط',
+    'minimum': 'خازوق الجولة',
+    'maximum': 'ملك الجولة',
+    'average': 'المتوسط',
+    'best_rank': 'أفضل ترتيب',
+    'worst_rank': 'أسوأ ترتيب',
+    'lucky': 'محظوظ الجولة',
+    'unlucky': 'منحوس الجولة',
+    'median': 'الوسيط',
+    'lower_quartile': 'الربع الأدنى',
+    'upper_quartile': 'الربع الأعلى',
+    'effective_ownership': 'نسبة الملكية الفعالة',
+    'player_name': 'اللاعب',
+    'team': 'الفريق',
+    'eo_count': 'العدد',
+    'eo_percentage': 'النسبة',
+    'back_to_home': 'العودة للرئيسية',
+    'unique_players': 'اللاعبين المميزين',
+    'show_unique': 'عرض اللاعبين المميزين',
+    'hide_unique': 'إخفاء',
+    
+    # Comparison section
+    'comparison': 'مقارنة المدربين',
+    'comparison_type': 'نوع المقارنة',
+    'points_comparison': 'مقارنة النقاط',
+    'rank_comparison': 'مقارنة الترتيب',
+    'select_manager_1': 'اختر المدرب الأول',
+    'select_manager_2': 'اختر المدرب الثاني',
+    'loading_data': 'جاري تحميل البيانات...',
+    'refresh': 'تحديث',
+    'gw_label': 'الجولة',
+    'points_label': 'النقاط',
+    'rank_label': 'الترتيب',
+}
+
+def get_chip_arabic(chip):
+    """Get Arabic name for chip"""
+    chip_map = {
+        'wildcard': ARABIC['wildcard'],
+        'freehit': ARABIC['freehit'],
+        'bboost': ARABIC['bench_boost'],
+        '3xc': ARABIC['triple_captain'],
+        'manager': ARABIC['assistant_manager'],
+    }
+    return chip_map.get(chip, ARABIC['no_chip']) if chip else ARABIC['no_chip']
+
+
+def is_chip_active(chip):
+    """Check if a chip is active (not 'no chip')"""
+    return chip is not None and chip != ''
