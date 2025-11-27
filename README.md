@@ -110,8 +110,34 @@ If using the free tier, the app sleeps after 15 minutes of inactivity.
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `DATABASE_URL` | PostgreSQL connection string | Yes (for Render) |
+| `FPL_SESSION_ID` | FPL session cookie | **Yes** |
+| `FPL_CSRF_TOKEN` | FPL CSRF token cookie | **Yes** |
 | `SECRET_KEY` | Flask secret key | Auto-generated |
 | `PORT` | Server port | Default: 5001 |
+
+### How to Get FPL Cookies
+
+1. Log in to [fantasy.premierleague.com](https://fantasy.premierleague.com)
+2. Open browser Developer Tools (F12)
+3. Go to **Application** tab → **Cookies** → `fantasy.premierleague.com`
+4. Copy values for:
+   - `sessionid` → use as `FPL_SESSION_ID`
+   - `csrftoken` → use as `FPL_CSRF_TOKEN`
+
+### Local Development
+Create a `.env` file (copy from `.env.example`):
+```bash
+cp .env.example .env
+# Edit .env and add your cookie values
+```
+
+### Render Deployment
+Add environment variables in Render Dashboard:
+1. Go to your Web Service → **Environment**
+2. Add `FPL_SESSION_ID` and `FPL_CSRF_TOKEN`
+3. Click **Save Changes**
+
+⚠️ **Important:** Cookies expire periodically. If the app stops working, get fresh cookies from FPL and update the environment variables.
 
 ---
 

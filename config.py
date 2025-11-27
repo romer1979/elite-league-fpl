@@ -2,14 +2,15 @@
 """
 Elite League Configuration
 """
+import os
 
 # League ID for your H2H league
 LEAGUE_ID = 639056
 
-# Authentication cookies (update with your valid values)
+# Authentication cookies - READ FROM ENVIRONMENT VARIABLES (secure)
 COOKIES = {
-    'sessionid': '.eJxVy8sKwjAQheF3yVpK0slkGnfuBQvFdchlQsRSirGr4rub7nR5-M6_C-e3d3Fb5Zd7JHEWWg-STA_i9EvKxycvh69zXufukG683pvVabpd2vwPiq-lva0BDRisIsZkjAWTWSlMUcoUiXXikFX2IXuK_UBRNidCVIxAVoL4fAH7WjMU:1qdKWX:gscU4n3NXCVKZVKm-TyQDyAFAvERsssnflInEj63Bxw',
-    'csrftoken': 'bdkplQaYzsHYN6FZOM8u1BNVZtbLixic'
+    'sessionid': os.environ.get('FPL_SESSION_ID', ''),
+    'csrftoken': os.environ.get('FPL_CSRF_TOKEN', '')
 }
 
 # Postponed games (update as needed)

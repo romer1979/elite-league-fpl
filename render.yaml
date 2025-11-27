@@ -23,3 +23,8 @@ services:
         generateValue: true
       - key: PYTHON_VERSION
         value: 3.11.0
+      # FPL Authentication - ADD THESE MANUALLY IN RENDER DASHBOARD
+      - key: FPL_SESSION_ID
+        sync: false  # Must be set manually in Render dashboard
+      - key: FPL_CSRF_TOKEN
+        sync: false  # Must be set manually in Render dashboard

@@ -8,6 +8,10 @@ import os
 import sys
 from datetime import datetime
 
+# Load environment variables from .env file (for local development)
+from dotenv import load_dotenv
+load_dotenv()
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import LEAGUE_ID, ARABIC
