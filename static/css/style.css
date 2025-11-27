@@ -42,8 +42,6 @@
 html {
     -webkit-text-size-adjust: 100%;
     -ms-text-size-adjust: 100%;
-    width: 100%;
-    overflow-x: hidden;
 }
 
 body {
@@ -53,10 +51,10 @@ body {
     min-height: 100vh;
     line-height: 1.6;
     direction: rtl;
-    overflow-x: hidden;
-    width: 100%;
     margin: 0;
     padding: 0;
+    max-width: 100vw;
+    overflow-x: hidden;
 }
 
 /* Header */
@@ -214,6 +212,7 @@ body {
     max-width: 1600px;
     margin: 0 auto;
     padding: 1.5rem;
+    overflow-x: hidden;
 }
 
 /* Dashboard Grid */
@@ -236,6 +235,7 @@ body {
     padding: 1.5rem;
     box-shadow: var(--shadow);
     border: 1px solid var(--border-color);
+    overflow: hidden;
 }
 
 .section-title {
@@ -277,29 +277,9 @@ body {
 
 /* Fixtures Table */
 .fixtures-table-container {
+    width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    position: relative;
-}
-
-/* Scroll shadow indicator for mobile */
-.fixtures-table-container::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 20px;
-    background: linear-gradient(to left, transparent, rgba(74, 18, 89, 0.1));
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-@media (max-width: 768px) {
-    .fixtures-table-container::after {
-        opacity: 1;
-    }
 }
 
 .fixtures-table {
@@ -579,29 +559,9 @@ body {
 
 /* Standings Table */
 .standings-table-container {
+    width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    position: relative;
-}
-
-/* Scroll shadow indicator for mobile */
-.standings-table-container::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 20px;
-    background: linear-gradient(to left, transparent, rgba(74, 18, 89, 0.1));
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-
-@media (max-width: 768px) {
-    .standings-table-container::after {
-        opacity: 1;
-    }
 }
 
 .standings-table {
@@ -1207,7 +1167,7 @@ body {
     font-weight: 500;
 
 /* ===========================================
-   SIMPLE MOBILE RESPONSIVE
+   MOBILE RESPONSIVE
    =========================================== */
 
 @media (max-width: 1200px) {
@@ -1220,14 +1180,22 @@ body {
 }
 
 @media (max-width: 768px) {
+    /* Force everything to fit screen width */
+    *, *::before, *::after {
+        box-sizing: border-box;
+    }
+    
     /* HEADER */
     .header {
         padding: 0.5rem;
+        width: 100%;
+        max-width: 100vw;
     }
     
     .header-content {
         flex-direction: column;
         gap: 0.5rem;
+        max-width: 100%;
     }
     
     .logo-img {
@@ -1271,39 +1239,45 @@ body {
         padding: 0.3rem 0.6rem;
     }
     
-    /* MAIN */
+    /* MAIN CONTAINER */
     .main-container {
         padding: 0.5rem;
+        width: 100%;
+        max-width: 100vw;
     }
     
     .fixtures-section,
     .standings-section {
-        padding: 0.6rem;
+        padding: 0.5rem;
         margin-bottom: 0.75rem;
-        overflow: visible;
+        width: 100%;
+        max-width: 100%;
     }
     
     .section-title {
         font-size: 1rem;
     }
     
-    /* TABLES - SIMPLE HORIZONTAL SCROLL */
+    /* TABLES - SCROLL INSIDE CONTAINER */
     .fixtures-table-container,
     .standings-table-container {
-        display: block;
         width: 100%;
-        overflow-x: scroll !important;
+        max-width: 100%;
+        overflow-x: scroll;
         -webkit-overflow-scrolling: touch;
+        display: block;
     }
     
     .fixtures-table {
-        min-width: 500px;
+        width: max-content;
+        min-width: 480px;
         font-size: 0.85rem;
     }
     
     .fixtures-table th,
     .fixtures-table td {
-        padding: 0.5rem 0.35rem;
+        padding: 0.5rem 0.4rem;
+        white-space: nowrap;
     }
     
     .team-name {
@@ -1336,25 +1310,34 @@ body {
         font-size: 0.7rem;
     }
     
-    /* STANDINGS */
+    /* STANDINGS TABLE */
     .standings-table {
-        min-width: 600px;
+        width: max-content;
+        min-width: 580px;
         font-size: 0.8rem;
     }
     
     .standings-table th,
     .standings-table td {
-        padding: 0.45rem 0.3rem;
+        padding: 0.45rem 0.35rem;
+        white-space: nowrap;
     }
     
     .standings-table th {
         font-size: 0.75rem;
     }
     
+    /* UNIQUE PLAYERS */
+    .unique-players-container {
+        grid-template-columns: 1fr;
+    }
+    
     /* FOOTER */
     .footer {
         padding: 0.75rem;
         font-size: 0.75rem;
+        width: 100%;
+        max-width: 100vw;
     }
     
     /* STATS PAGE */
@@ -1384,8 +1367,9 @@ body {
     }
     
     .stats-table-container {
-        overflow-x: scroll !important;
-        -webkit-overflow-scrolling: touch;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: scroll;
     }
     
     .comparison-controls {
@@ -1403,6 +1387,10 @@ body {
 }
 
 @media (max-width: 480px) {
+    .logo-img {
+        height: 40px;
+    }
+    
     .logo-title {
         font-size: 1.1rem;
     }
@@ -1412,12 +1400,12 @@ body {
     }
     
     .fixtures-table {
-        min-width: 450px;
+        min-width: 440px;
         font-size: 0.8rem;
     }
     
     .standings-table {
-        min-width: 550px;
+        min-width: 520px;
         font-size: 0.75rem;
     }
 }
