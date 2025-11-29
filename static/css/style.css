@@ -1129,11 +1129,6 @@ body {
         box-sizing: border-box;
     }
     
-    /* Body padding for bottom nav */
-    body {
-        padding-bottom: 70px;
-    }
-    
     /* HEADER */
     .header {
         padding: 0.5rem 0.75rem;

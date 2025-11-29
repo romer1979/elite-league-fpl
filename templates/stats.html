@@ -25,7 +25,7 @@
             <div class="gameweek-info">
                 <span class="gw-label">{{ ar.gameweek }}</span>
                 <span class="gw-number">{{ data.gameweek or '-' }}</span>
-                <a href="/" class="back-link desktop-only">{{ ar.back_to_home }} ←</a>
+                <a href="/" class="stats-link">🏠 {{ ar.back_to_home }}</a>
             </div>
         </div>
     </header>
@@ -47,7 +47,12 @@
             <div class="stats-grid single-column">
                 <!-- Points Stats -->
                 <section class="stats-section points-section">
-                    <h2 class="section-title">📈 {{ ar.points_stats }}</h2>
+                    <h2 class="section-title">
+                        📈 {{ ar.points_stats }}
+                        {% if data.is_live %}
+                            <span class="live-badge">🔴 {{ ar.live }}</span>
+                        {% endif %}
+                    </h2>
                     <div class="points-stats-grid-simple">
                         <div class="stat-card danger-card">
                             <span class="stat-emoji">🪤</span>
@@ -269,14 +274,6 @@
         <p class="timestamp" id="timestamp"></p>
     </footer>
     
-    <!-- Mobile Bottom Navigation -->
-    <nav class="mobile-bottom-nav mobile-only">
-        <a href="/" class="bottom-nav-item">
-            <span class="bottom-nav-icon">🏠</span>
-            <span class="bottom-nav-label">الرئيسية</span>
-        </a>
-    </nav>
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         // Update timestamp with English numbers

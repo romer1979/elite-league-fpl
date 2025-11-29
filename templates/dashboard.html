@@ -34,7 +34,7 @@
                     <span class="status-badge">{{ ar.in_progress }}</span>
                 {% endif %}
                 <button class="refresh-btn" onclick="refreshDashboard()" id="refresh-btn">🔄</button>
-                <a href="/stats" class="stats-link desktop-only">📊 {{ ar.stats }}</a>
+                <a href="/stats" class="stats-link">📊 {{ ar.stats }}</a>
             </div>
         </div>
     </header>
@@ -308,14 +308,6 @@
         <p class="timestamp" id="timestamp"></p>
     </footer>
     
-    <!-- Mobile Bottom Navigation -->
-    <nav class="mobile-bottom-nav mobile-only">
-        <a href="/stats" class="bottom-nav-item">
-            <span class="bottom-nav-icon">📊</span>
-            <span class="bottom-nav-label">الإحصائيات</span>
-        </a>
-    </nav>
-
     <script>
         // Toggle unique players row (Desktop)
         function toggleUnique(index) {

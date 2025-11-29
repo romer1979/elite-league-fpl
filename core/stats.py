@@ -14,11 +14,132 @@ from core.fpl_api import (
     get_entry_picks,
     get_multiple_entry_picks,
     get_multiple_entry_history,
+    get_live_data,
+    get_fixtures,
     build_player_info,
     fetch_data,
     FPLApiError
 )
 from config import LEAGUE_ID, EXCLUDED_PLAYERS, get_chip_arabic
+
+
+def calculate_live_points_for_entry(picks_data, live_elements_dict, player_info, fixtures):
+    """
+    Calculate live points for a single entry including auto-subs
+    """
+    picks = picks_data.get('picks', [])
+    chip = picks_data.get('active_chip')
+    cost = picks_data.get('entry_history', {}).get('event_transfers_cost', 0)
+    
+    if not picks or not live_elements_dict:
+        return picks_data.get('entry_history', {}).get('points', 0)
+    
+    # Build team fixture status
+    team_fixture_started = {}
+    team_fixture_finished = {}
+    for fixture in fixtures:
+        started = fixture.get('started', False)
+        finished = fixture.get('finished', False) or fixture.get('finished_provisional', False)
+        team_fixture_started[fixture['team_h']] = team_fixture_started.get(fixture['team_h'], False) or started
+        team_fixture_started[fixture['team_a']] = team_fixture_started.get(fixture['team_a'], False) or started
+        team_fixture_finished[fixture['team_h']] = team_fixture_finished.get(fixture['team_h'], True) and finished
+        team_fixture_finished[fixture['team_a']] = team_fixture_finished.get(fixture['team_a'], True) and finished
+    
+    def team_finished(team_id):
+        return team_fixture_finished.get(team_id, False)
+    
+    # Get captain/vice info
+    captain_id = next((p['element'] for p in picks if p.get('is_captain')), None)
+    vice_id = next((p['element'] for p in picks if p.get('is_vice_captain')), None)
+    
+    # Calculate starting XI points
+    if chip == 'bboost':
+        starters = picks[:15]
+    else:
+        starters = picks[:11]
+    
+    bench = picks[11:] if chip != 'bboost' else []
+    
+    # Get live data
+    def get_pts(pid):
+        return live_elements_dict.get(pid, {}).get('total_points', 0)
+    
+    def get_mins(pid):
+        return live_elements_dict.get(pid, {}).get('minutes', 0)
+    
+    # Calculate captain multiplier
+    multiplier = 3 if chip == '3xc' else 2
+    captain_played = get_mins(captain_id) > 0 if captain_id else False
+    captain_team = player_info.get(captain_id, {}).get('team', 0) if captain_id else 0
+    captain_team_finished = team_finished(captain_team)
+    
+    # Determine if vice-captain should get multiplier
+    vice_gets_multiplier = False
+    if captain_id and not captain_played and captain_team_finished:
+        vice_gets_multiplier = True
+    
+    # Calculate base points from starters
+    total = 0
+    for pick in starters:
+        pid = pick['element']
+        pts = get_pts(pid)
+        
+        if pick.get('is_captain'):
+            if captain_played:
+                total += pts * multiplier
+            elif captain_team_finished:
+                total += 0  # Captain didn't play, team finished
+            else:
+                total += pts  # Captain hasn't played yet, team not finished
+        elif pick.get('is_vice_captain') and vice_gets_multiplier:
+            total += pts * multiplier
+        else:
+            total += pts
+    
+    # Auto-subs (only if not bench boost)
+    if chip != 'bboost' and bench:
+        # Find non-playing starters
+        xi_ids = [p['element'] for p in picks[:11]]
+        used_bench = set()
+        
+        for pick in picks[:11]:
+            pid = pick['element']
+            mins = get_mins(pid)
+            pteam = player_info.get(pid, {}).get('team', 0)
+            
+            # Check if player didn't play and team finished
+            if mins == 0 and team_finished(pteam):
+                # Find eligible bench player
+                for bench_pick in bench:
+                    bid = bench_pick['element']
+                    if bid in used_bench:
+                        continue
+                    
+                    bmins = get_mins(bid)
+                    bteam = player_info.get(bid, {}).get('team', 0)
+                    
+                    # Skip if bench player also didn't play and team finished
+                    if bmins == 0 and team_finished(bteam):
+                        continue
+                    
+                    # GK can only replace GK
+                    spos = player_info.get(pid, {}).get('position', 0)
+                    bpos = player_info.get(bid, {}).get('position', 0)
+                    
+                    if spos == 1 and bpos != 1:
+                        continue
+                    if spos != 1 and bpos == 1:
+                        continue
+                    
+                    # Valid sub found
+                    total += get_pts(bid)
+                    used_bench.add(bid)
+                    break
+    
+    # Subtract transfer cost
+    total -= cost
+    
+    return total
 
 
 def get_manager_history(league_id=None):
@@ -111,6 +232,7 @@ def get_manager_history(league_id=None):
 def get_league_stats(league_id=None, gameweek=None):
     """
     Get comprehensive league statistics - OPTIMIZED with parallel fetching
+    Uses LIVE points when gameweek is in progress
     """
     if league_id is None:
         league_id = LEAGUE_ID
@@ -121,9 +243,40 @@ def get_league_stats(league_id=None, gameweek=None):
         player_info = build_player_info(bootstrap_data)
         elements = bootstrap_data.get('elements', [])
         
-        # Get current gameweek - always use current, not previous
+        # Get current gameweek info
         gw_info = get_current_gameweek(bootstrap_data)
         current_gw = gameweek or gw_info['id']
+        
+        # Check if gameweek is live (started but not finished)
+        is_live = gw_info.get('is_current', False) and not gw_info.get('finished', False)
+        fixtures_started = False
+        
+        # Get live data if gameweek is live
+        live_elements_dict = {}
+        fixtures = []
+        
+        if is_live:
+            try:
+                # Check if any fixtures have started
+                fixtures = get_fixtures(current_gw)
+                fixtures_started = any(f.get('started', False) for f in fixtures)
+                
+                if fixtures_started:
+                    # Fetch live data
+                    live_data = get_live_data(current_gw)
+                    live_elements_dict = {
+                        e['id']: {
+                            'total_points': e['stats'].get('total_points', 0),
+                            'minutes': e['stats'].get('minutes', 0),
+                            'bonus': e['stats'].get('bonus', 0)
+                        }
+                        for e in live_data.get('elements', [])
+                    }
+            except Exception as e:
+                print(f"Error fetching live data: {e}")
+                is_live = False
+        
+        use_live_points = is_live and fixtures_started and live_elements_dict
         
         # Get league data
         league_data = get_league_standings(league_id)
@@ -165,12 +318,16 @@ def get_league_stats(league_id=None, gameweek=None):
             entry_history = picks_data.get('entry_history', {})
             chip = picks_data.get('active_chip')
             
-            # GW Points
-            points = entry_history.get('points', 0)
+            # GW Points - USE LIVE POINTS if available
+            if use_live_points:
+                points = calculate_live_points_for_entry(picks_data, live_elements_dict, player_info, fixtures)
+            else:
+                points = entry_history.get('points', 0)
+            
             gw_points.append(points)
             manager_points[player_name] = points
             
-            # Overall rank
+            # Overall rank (keep from API - this is always accurate)
             overall_rank = entry_history.get('overall_rank', 0)
             if overall_rank and overall_rank > 0:
                 all_ranks.append({
@@ -256,8 +413,6 @@ def get_league_stats(league_id=None, gameweek=None):
                 for match in matches:
                     entry_1 = match['entry_1_entry']
                     entry_2 = match['entry_2_entry']
-                    pts_1 = match.get('entry_1_points', 0)
-                    pts_2 = match.get('entry_2_points', 0)
                     
                     # Get manager names
                     team_1_info = next((t for t in teams if t['entry'] == entry_1), None)
@@ -271,6 +426,10 @@ def get_league_stats(league_id=None, gameweek=None):
                     
                     if name_1 in EXCLUDED_PLAYERS or name_2 in EXCLUDED_PLAYERS:
                         continue
+                    
+                    # Use live points from manager_points dict if available
+                    pts_1 = manager_points.get(name_1, match.get('entry_1_points', 0))
+                    pts_2 = manager_points.get(name_2, match.get('entry_2_points', 0))
                     
                     # Skip draws
                     if pts_1 == pts_2:
@@ -353,6 +512,7 @@ def get_league_stats(league_id=None, gameweek=None):
             'gameweek': current_gw,
             'gw_info': gw_info,
             'league_name': league_name,
+            'is_live': use_live_points,
             'captain_stats': captain_stats,
             'chips_used': chips_used,
             'points_stats': points_stats,
