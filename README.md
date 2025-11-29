@@ -1,15 +1,25 @@
-# Elite League FPL Tracker 🏆
+# Libya FPL - دوريات قروب عشاق الفانتازي في ليبيا 🏆
 
-A Fantasy Premier League H2H League tracker with live standings, statistics, and manager comparison.
+A Fantasy Premier League multi-league tracker with live standings, statistics, and manager comparison.
 
 ## Features
 
+- 🏠 Multi-league home page
 - 📊 Live standings with rank changes
 - ⚔️ H2H fixture results
 - 📈 Manager comparison charts (points & ranks)
 - 👑 Captain & chip usage stats
 - 🍀 Lucky/Unlucky manager of the week
 - 🔄 Auto-refresh during live gameweeks
+- 📱 Mobile-optimized design
+
+## Leagues
+
+- **دوري النخبة** (Elite League) - H2H
+- **The 100** - Survival League (Coming Soon)
+- **دوري المدن** - Team H2H (Coming Soon)
+- **الدوري الليبي** - Team H2H (Coming Soon)
+- **البطولة العربية** - Team H2H (Coming Soon)
 
 ## Local Development
 
@@ -21,8 +31,8 @@ A Fantasy Premier League H2H League tracker with live standings, statistics, and
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/elite-league.git
-cd elite-league
+git clone https://github.com/yourusername/LibyaFPL.git
+cd LibyaFPL
 
 # Create virtual environment
 python -m venv venv
@@ -48,7 +58,7 @@ git init
 git add .
 git commit -m "Initial commit"
 git branch -M main
-git remote add origin https://github.com/yourusername/elite-league.git
+git remote add origin https://github.com/yourusername/LibyaFPL.git
 git push -u origin main
 ```
 
@@ -68,7 +78,7 @@ git push -u origin main
 
 1. **Create PostgreSQL Database:**
    - Go to Render Dashboard → **"New"** → **"PostgreSQL"**
-   - Name: `elite-league-db`
+   - Name: `libyafpl-db`
    - Plan: Free (or Starter for better performance)
    - Click **"Create Database"**
    - Copy the **Internal Database URL**
@@ -77,7 +87,7 @@ git push -u origin main
    - Go to Render Dashboard → **"New"** → **"Web Service"**
    - Connect your GitHub repository
    - Settings:
-     - **Name:** `elite-league`
+     - **Name:** `libyafpl`
      - **Environment:** Python 3
      - **Build Command:** `pip install -r requirements.txt`
      - **Start Command:** `gunicorn app:app`
@@ -87,7 +97,7 @@ git push -u origin main
 
 ### Step 3: Access Your App
 
-Your app will be live at: `https://elite-league.onrender.com`
+Your app will be live at: `https://libyafpl.onrender.com`
 
 ---
 
@@ -99,7 +109,7 @@ If using the free tier, the app sleeps after 15 minutes of inactivity.
 
 1. Create account at cron-job.org
 2. Add new cron job:
-   - URL: `https://elite-league.onrender.com/`
+   - URL: `https://libyafpl.onrender.com/`
    - Schedule: Every 14 minutes
 3. Save and activate
 
@@ -141,16 +151,13 @@ Add environment variables in Render Dashboard:
 
 ---
 
-## Database Models
+## URL Structure
 
-### StandingsHistory
-Stores standings snapshot for each gameweek:
-- Player rank, league points, GW points
-- Overall rank, captain, chip used
-- Match result and opponent
-
-### FixtureResult
-Stores H2H fixture results per gameweek
+```
+/                        → Home (all leagues)
+/league/elite            → Elite League dashboard
+/league/elite/stats      → Elite League statistics
+```
 
 ---
 
