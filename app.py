@@ -95,6 +95,18 @@ def elite_stats():
     return render_template('stats.html', data=data, ar=ARABIC)
 
 
+@app.route('/league/the100')
+def the100_dashboard():
+    """The 100 League dashboard"""
+    return render_template('the100_dashboard.html')
+
+
+@app.route('/league/the100')
+def the100_dashboard():
+    """The 100 Survival League dashboard"""
+    return render_template('the100_dashboard.html')
+
+
 @app.route('/api/comparison')
 def comparison_data():
     """API endpoint for manager comparison data"""

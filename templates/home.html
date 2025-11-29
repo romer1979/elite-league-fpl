@@ -265,6 +265,45 @@
             opacity: 0.9;
         }
         
+        /* The 100 Dark Theme */
+        .the100-card {
+            background: #1a1a1a;
+        }
+        
+        .the100-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
+        
+        .the100-header {
+            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+        }
+        
+        .the100-logo {
+            background: #0a0a0a !important;
+            border-radius: 8px;
+        }
+        
+        .the100-card .league-info h2 {
+            color: #e8e8e8;
+        }
+        
+        .the100-card .coming-soon-content {
+            color: #c0c0c0;
+            background: #141414;
+        }
+        
+        .the100-card .coming-soon-content .icon {
+            opacity: 0.8;
+        }
+        
+        .the100-btn {
+            background: linear-gradient(135deg, #404040 0%, #2d2d2d 100%);
+        }
+        
+        .the100-btn:hover {
+            background: linear-gradient(135deg, #505050 0%, #3d3d3d 100%);
+        }
+        
         /* Footer */
         .main-footer {
             text-align: center;
@@ -356,19 +395,21 @@
                 <a href="/league/elite" class="view-league-btn">عرض الدوري كاملاً ←</a>
             </div>
             
-            <!-- The 100 - Coming Soon -->
-            <div class="league-card coming-soon">
-                <div class="league-header">
-                    <div class="league-logo placeholder">💯</div>
+            <!-- The 100 - Active -->
+            <div class="league-card the100-card">
+                <div class="league-header the100-header">
+                    <div class="league-logo the100-logo">
+                        <img src="{{ url_for('static', filename='the100_logo.png') }}" alt="The 100">
+                    </div>
                     <div class="league-info">
                         <h2>The 100</h2>
                     </div>
-                    <span class="coming-soon-badge">قريباً</span>
                 </div>
                 <div class="coming-soon-content">
-                    <div class="icon">🚧</div>
-                    <p>سيتم إضافة هذا الدوري قريباً</p>
+                    <div class="icon">🏃</div>
+                    <p>مرحلة التأهل جارية</p>
                 </div>
+                <a href="/league/the100" class="view-league-btn the100-btn">عرض الدوري ←</a>
             </div>
             
             <!-- دوري المدن - Coming Soon -->
