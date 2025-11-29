@@ -62,6 +62,23 @@
             color: #4ade80;
         }
         
+        /* Winner Zone - Last season champion */
+        .standings-table tr.winner-zone {
+            background: rgba(251, 191, 36, 0.1);
+        }
+        
+        .standings-table tr.winner-zone:hover {
+            background: rgba(251, 191, 36, 0.15);
+        }
+        
+        .standings-table tr.winner-zone .rank {
+            color: #fbbf24;
+        }
+        
+        .standings-table tr.winner-zone .manager-cell {
+            color: #fbbf24;
+        }
+        
         /* Cutoff Row - 100th place */
         .standings-table tr.cutoff-row {
             border-bottom: 3px solid #4ade80;
@@ -160,6 +177,11 @@
         .zone-indicator.safe {
             background: rgba(74, 222, 128, 0.2);
             color: #4ade80;
+        }
+        
+        .zone-indicator.winner {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
         }
         
         .zone-indicator.danger {
@@ -311,13 +333,13 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">✅</div>
-                            <div class="stat-value">{{ data.qualification_cutoff or 100 }}</div>
+                            <div class="stat-value">100</div>
                             <div class="stat-label">المتأهلين</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-icon">❌</div>
-                            <div class="stat-value">{{ (data.total_managers or 0) - (data.qualification_cutoff or 100) }}</div>
-                            <div class="stat-label">خارج التأهل</div>
+                            <div class="stat-icon">🏆</div>
+                            <div class="stat-value">1</div>
+                            <div class="stat-label">البطل السابق</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-icon">📅</div>
@@ -332,8 +354,9 @@
             <div class="section">
                 <div class="section-header">
                     <h2 class="section-title">🏅 ترتيب التأهل</h2>
-                    <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                        <span class="zone-indicator safe">✅ أفضل 100 متأهلين</span>
+                    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                        <span class="zone-indicator safe">✅ أفضل {{ data.qualification_cutoff }}</span>
+                        <span class="zone-indicator winner">🏆 البطل</span>
                         <span class="zone-indicator danger">❌ خارج التأهل</span>
                     </div>
                 </div>
@@ -350,6 +373,8 @@
                                 <tr>
                                     <th>#</th>
                                     <th>المدرب</th>
+                                    <th>الكابتن</th>
+                                    <th>الشريحة</th>
                                     <th>GW</th>
                                     <th>المجموع</th>
                                     <th>+/-</th>
@@ -357,7 +382,7 @@
                             </thead>
                             <tbody>
                                 {% for team in data.standings %}
-                                <tr class="{% if team.live_rank <= data.qualification_cutoff %}safe-zone{% else %}danger-zone{% endif %}{% if team.live_rank == data.qualification_cutoff %} cutoff-row{% endif %}" data-manager="{{ team.manager_name|lower }}" data-team="{{ team.team_name|lower }}">
+                                <tr class="{% if team.is_winner %}winner-zone{% elif team.live_rank <= data.qualification_cutoff %}safe-zone{% else %}danger-zone{% endif %}{% if team.live_rank == data.qualification_cutoff %} cutoff-row{% endif %}" data-manager="{{ team.manager_name|lower }}" data-team="{{ team.team_name|lower }}">
                                     <td class="rank">
                                         {% if team.live_rank == 1 %}
                                             <span class="medal">🥇</span>
@@ -371,8 +396,11 @@
                                     </td>
                                     <td class="manager-cell">
                                         {{ team.manager_name }}
+                                        {% if team.is_winner %}🏆{% endif %}
                                         <span class="team-name">{{ team.team_name }}</span>
                                     </td>
+                                    <td class="captain">{{ team.captain }}</td>
+                                    <td class="chip {% if team.chip_raw %}active{% endif %}">{{ team.chip }}</td>
                                     <td class="gw-points">{{ team.live_gw_points }}</td>
                                     <td class="total-points">{{ team.live_total }}</td>
                                     <td class="rank-change {% if team.rank_change > 0 %}up{% elif team.rank_change < 0 %}down{% else %}same{% endif %}">
