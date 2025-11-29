@@ -114,7 +114,8 @@
                     <!-- Captaincy Stats -->
                     <section class="stats-section">
                         <h2 class="section-title">👑 {{ ar.captaincy_stats }}</h2>
-                        <div class="stats-table-container">
+                        <!-- Desktop Table -->
+                        <div class="stats-table-container desktop-only">
                             <table class="stats-table compact">
                                 <thead>
                                     <tr>
@@ -134,13 +135,23 @@
                                 </tbody>
                             </table>
                         </div>
+                        <!-- Mobile List -->
+                        <div class="mobile-stats-list mobile-only">
+                            {% for captain in data.captain_stats %}
+                            <div class="mobile-stat-item">
+                                <span class="msi-name">{{ captain.name }}</span>
+                                <span class="msi-value">{{ captain.count }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
                     </section>
 
                     <!-- Chips Used -->
                     <section class="stats-section">
                         <h2 class="section-title">⚡ {{ ar.chips_stats }}</h2>
                         {% if data.chips_used %}
-                        <div class="stats-table-container">
+                        <!-- Desktop Table -->
+                        <div class="stats-table-container desktop-only">
                             <table class="stats-table compact">
                                 <thead>
                                     <tr>
@@ -162,6 +173,15 @@
                                 </tbody>
                             </table>
                         </div>
+                        <!-- Mobile List -->
+                        <div class="mobile-stats-list mobile-only">
+                            {% for chip in data.chips_used %}
+                            <div class="mobile-stat-item">
+                                <a href="https://fantasy.premierleague.com/entry/{{ chip.entry_id }}/event/{{ data.gameweek }}" target="_blank" class="msi-name">{{ chip.manager }}</a>
+                                <span class="msi-chip active">{{ chip.chip_ar }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
                         {% else %}
                         <div class="no-data">{{ ar.no_chips }}</div>
                         {% endif %}
@@ -170,7 +190,8 @@
                     <!-- Effective Ownership -->
                     <section class="stats-section">
                         <h2 class="section-title">📊 {{ ar.effective_ownership }}</h2>
-                        <div class="stats-table-container">
+                        <!-- Desktop Table -->
+                        <div class="stats-table-container desktop-only">
                             <table class="stats-table compact">
                                 <thead>
                                     <tr>
@@ -189,6 +210,15 @@
                                     {% endfor %}
                                 </tbody>
                             </table>
+                        </div>
+                        <!-- Mobile List -->
+                        <div class="mobile-stats-list mobile-only">
+                            {% for player in data.effective_ownership %}
+                            <div class="mobile-stat-item">
+                                <span class="msi-name">{{ player.name }} <span class="msi-team">{{ player.team }}</span></span>
+                                <span class="msi-percentage">{{ player.percentage }}%</span>
+                            </div>
+                            {% endfor %}
                         </div>
                     </section>
                 </div>
@@ -244,10 +274,6 @@
         <a href="/" class="bottom-nav-item">
             <span class="bottom-nav-icon">🏠</span>
             <span class="bottom-nav-label">الرئيسية</span>
-        </a>
-        <a href="/stats" class="bottom-nav-item active">
-            <span class="bottom-nav-icon">📊</span>
-            <span class="bottom-nav-label">الإحصائيات</span>
         </a>
     </nav>
 

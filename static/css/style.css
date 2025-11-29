@@ -1665,6 +1665,80 @@ body {
         min-width: 300px;
         font-size: 0.8rem;
     }
+    
+    /* Mobile Stats List */
+    .mobile-stats-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .mobile-stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0.75rem;
+        background: #fafafa;
+        border-radius: 8px;
+        border: 1px solid #f0f0f0;
+    }
+    
+    .msi-name {
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: var(--text-primary);
+        text-decoration: none;
+    }
+    
+    .msi-team {
+        font-size: 0.7rem;
+        color: var(--text-secondary);
+        margin-right: 0.25rem;
+    }
+    
+    .msi-value {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: var(--primary-purple);
+        background: rgba(74, 18, 89, 0.1);
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+    }
+    
+    .msi-chip {
+        font-size: 0.75rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 6px;
+        background: #f0f0f0;
+        color: #666;
+    }
+    
+    .msi-chip.active {
+        background: linear-gradient(135deg, var(--accent-yellow) 0%, var(--accent-yellow-light) 100%);
+        color: var(--text-dark);
+        font-weight: 600;
+    }
+    
+    .msi-percentage {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--success);
+    }
+    
+    /* Stats three columns on mobile */
+    .stats-three-columns {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .stats-section {
+        padding: 0.75rem;
+    }
+    
+    .stats-section .section-title {
+        font-size: 0.95rem;
+    }
 }
 
 /* Small phones */
