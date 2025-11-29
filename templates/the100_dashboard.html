@@ -271,9 +271,6 @@
             </a>
             <div class="header-nav">
                 <span class="nav-link">الجولة {{ data.gameweek or '-' }}</span>
-                {% if data.is_live %}
-                <span class="live-badge">مباشر</span>
-                {% endif %}
                 <a href="/" class="nav-link home-btn">🏠</a>
             </div>
         </div>
@@ -343,7 +340,7 @@
                 <div class="section-content">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
                         <input type="text" class="search-box" id="searchBox" placeholder="🔍 ابحث عن مدير..." oninput="filterTable()">
-                        <span style="color: #666; font-size: 0.8rem;">عرض أفضل {{ data.total_managers }} مدير</span>
+                        <span style="color: #888; font-size: 0.75rem;">{{ data.total_managers }} مدير • آخر تحديث: {{ data.last_updated or '-' }}</span>
                     </div>
                     
                     {% if data.standings %}
@@ -353,8 +350,6 @@
                                 <tr>
                                     <th>#</th>
                                     <th>المدرب</th>
-                                    <th>الكابتن</th>
-                                    <th>الشريحة</th>
                                     <th>GW</th>
                                     <th>المجموع</th>
                                     <th>+/-</th>
@@ -378,8 +373,6 @@
                                         {{ team.manager_name }}
                                         <span class="team-name">{{ team.team_name }}</span>
                                     </td>
-                                    <td class="captain">{{ team.captain }}</td>
-                                    <td class="chip {% if team.chip_raw %}active{% endif %}">{{ team.chip }}</td>
                                     <td class="gw-points">{{ team.live_gw_points }}</td>
                                     <td class="total-points">{{ team.live_total }}</td>
                                     <td class="rank-change {% if team.rank_change > 0 %}up{% elif team.rank_change < 0 %}down{% else %}same{% endif %}">
