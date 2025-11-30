@@ -8,20 +8,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <style>
         /* Cities League specific overrides */
-        .team-captains {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.25rem;
-            margin-top: 0.25rem;
-        }
-        
-        .captain-tag {
-            font-size: 0.7rem;
-            color: #f5c842;
-            background: rgba(245, 200, 66, 0.1);
-            padding: 0.1rem 0.4rem;
-            border-radius: 4px;
-        }
         
         /* Rank change arrows */
         .rank-up {
@@ -55,64 +41,22 @@
             background: rgba(239, 68, 68, 0.08) !important;
         }
         
-        /* Standings captains column */
-        .standings-table .captains-cell {
-            font-size: 0.75rem;
-            color: #f5c842;
-            max-width: 200px;
-            text-align: right;
-        }
-        
-        /* Fixtures captains column */
-        .match-captains-cell {
-            font-size: 0.75rem;
-            color: #f5c842;
-            min-width: 180px;
-        }
-        
-        .captains-split {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .cap-team1, .cap-team2 {
-            flex: 1;
-            text-align: center;
-        }
-        
-        .cap-vs {
-            color: #666;
-            font-size: 0.8rem;
-        }
-        
-        .captains-header {
-            min-width: 180px;
-        }
-        
-        /* Mobile captains row */
-        .fixture-captains-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin-top: 0.5rem;
+        /* Stacked captains in standings */
+        .captains-stacked-cell {
             font-size: 0.7rem;
             color: #f5c842;
-            background: rgba(245, 200, 66, 0.05);
-            border-radius: 0 0 8px 8px;
+            text-align: right;
+            padding: 0.25rem 0.5rem !important;
+            max-width: 100px;
         }
         
-        .cap-side {
-            flex: 1;
-            text-align: center;
+        .captain-row {
+            white-space: nowrap;
+            line-height: 1.4;
         }
         
-        .cap-divider {
-            padding: 0 0.5rem;
-            font-size: 0.8rem;
+        .captains-col-header {
+            max-width: 100px;
         }
         
         /* Stats row at top */
@@ -145,18 +89,48 @@
             text-align: center;
         }
         
+        /* Mobile standing details */
+        .mobile-standing-details {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.02);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .ms-detail {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.25rem 0;
+        }
+        
+        .ms-label {
+            color: #888;
+            font-size: 0.8rem;
+        }
+        
+        .ms-value {
+            font-size: 0.8rem;
+        }
+        
+        .captains-value {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.1rem;
+        }
+        
+        .mobile-captain {
+            color: #f5c842;
+            font-size: 0.75rem;
+        }
+        
+        .mobile-standing-row {
+            cursor: pointer;
+        }
+        
         /* Mobile adjustments */
         @media (max-width: 768px) {
-            .captains-cell, .match-captains-cell, .captains-header {
+            .captains-stacked-cell, .captains-col-header {
                 display: none;
-            }
-            
-            .team-captains {
-                font-size: 0.65rem;
-            }
-            
-            .fixture-captains-row {
-                display: flex;
             }
         }
     </style>
@@ -229,41 +203,66 @@
                                     <th>النتيجة</th>
                                     <th>الفريق الثاني</th>
                                     <th>الفارق</th>
-                                    <th class="captains-header">الكباتن</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for match in data.matches %}
                                 <tr class="fixture-row">
-                                    <td class="team-cell {% if match.points_1 > match.points_2 %}winner{% endif %}">
+                                    <td class="team-cell {% if match.winner == 1 %}winner{% endif %}">
                                         <div class="team-info-cell">
                                             <span class="team-name">
-                                                {% if match.points_1 > match.points_2 %}<span class="winner-icon">✓</span>{% endif %}
+                                                {% if match.winner == 1 %}<span class="winner-icon">✓</span>{% endif %}
                                                 {{ match.team_1 }}
+                                            </span>
+                                            <span class="team-details">
+                                                <span class="captain-badge" title="الكباتن">👑 {{ match.captains_1|join(' • ') }}</span>
                                             </span>
                                         </div>
                                     </td>
                                     <td class="score-cell">
-                                        <span class="score {% if match.points_1 > match.points_2 %}score-win{% endif %}">{{ match.points_1 }}</span>
+                                        <span class="score {% if match.winner == 1 %}score-win{% endif %}">{{ match.points_1 }}</span>
                                         <span class="vs">-</span>
-                                        <span class="score {% if match.points_2 > match.points_1 %}score-win{% endif %}">{{ match.points_2 }}</span>
+                                        <span class="score {% if match.winner == 2 %}score-win{% endif %}">{{ match.points_2 }}</span>
                                     </td>
-                                    <td class="team-cell {% if match.points_2 > match.points_1 %}winner{% endif %}">
+                                    <td class="team-cell {% if match.winner == 2 %}winner{% endif %}">
                                         <div class="team-info-cell">
                                             <span class="team-name">
-                                                {% if match.points_2 > match.points_1 %}<span class="winner-icon">✓</span>{% endif %}
+                                                {% if match.winner == 2 %}<span class="winner-icon">✓</span>{% endif %}
                                                 {{ match.team_2 }}
+                                            </span>
+                                            <span class="team-details">
+                                                <span class="captain-badge" title="الكباتن">👑 {{ match.captains_2|join(' • ') }}</span>
                                             </span>
                                         </div>
                                     </td>
                                     <td class="diff-cell">
-                                        <span class="diff-badge">{{ (match.points_1 - match.points_2)|abs }}</span>
+                                        <span class="diff-badge">{{ match.points_diff }}</span>
+                                        <button class="toggle-unique-btn" onclick="toggleUnique({{ loop.index }})">▼</button>
                                     </td>
-                                    <td class="match-captains-cell">
-                                        <div class="captains-split">
-                                            <span class="cap-team1">{{ match.captains_1|join(' • ') }}</span>
-                                            <span class="cap-vs">|</span>
-                                            <span class="cap-team2">{{ match.captains_2|join(' • ') }}</span>
+                                </tr>
+                                <tr class="unique-players-row" id="unique-row-{{ loop.index }}" style="display: none;">
+                                    <td colspan="4">
+                                        <div class="unique-players-container">
+                                            <div class="unique-team unique-team-1">
+                                                <span class="unique-label">{{ match.team_1 }}:</span>
+                                                <div class="unique-players-list">
+                                                    {% for player in match.team_1_unique %}
+                                                        <span class="unique-player-tag status-{{ player.status }}">{{ player.name }}</span>
+                                                    {% else %}
+                                                        <span class="no-unique">-</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            <div class="unique-team unique-team-2">
+                                                <span class="unique-label">{{ match.team_2 }}:</span>
+                                                <div class="unique-players-list">
+                                                    {% for player in match.team_2_unique %}
+                                                        <span class="unique-player-tag status-{{ player.status }}">{{ player.name }}</span>
+                                                    {% else %}
+                                                        <span class="no-unique">-</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -275,39 +274,69 @@
                     <!-- Mobile Cards View -->
                     <div class="mobile-fixtures mobile-only">
                         {% for match in data.matches %}
-                        <div class="fixture-card">
+                        <div class="fixture-card" onclick="toggleMobileUnique({{ loop.index }})">
                             <div class="fixture-card-main">
                                 <!-- Team 1 -->
-                                <div class="fixture-team {% if match.points_1 > match.points_2 %}winner{% endif %}">
+                                <div class="fixture-team {% if match.winner == 1 %}winner{% endif %}">
                                     <span class="fixture-team-name">
-                                        {% if match.points_1 > match.points_2 %}✓ {% endif %}{{ match.team_1 }}
+                                        {% if match.winner == 1 %}✓ {% endif %}{{ match.team_1 }}
                                     </span>
+                                    <div class="fixture-team-details">
+                                        <span class="fixture-captain">👑 {{ match.captains_1|join(' • ') }}</span>
+                                    </div>
                                 </div>
                                 
                                 <!-- Score -->
                                 <div class="fixture-score-block">
                                     <div class="fixture-scores">
-                                        <span class="fixture-pts {% if match.points_1 > match.points_2 %}winning{% endif %}">{{ match.points_1 }}</span>
+                                        <span class="fixture-pts {% if match.winner == 1 %}winning{% endif %}">{{ match.points_1 }}</span>
                                         <span class="fixture-separator">-</span>
-                                        <span class="fixture-pts {% if match.points_2 > match.points_1 %}winning{% endif %}">{{ match.points_2 }}</span>
+                                        <span class="fixture-pts {% if match.winner == 2 %}winning{% endif %}">{{ match.points_2 }}</span>
                                     </div>
                                     <div class="fixture-diff">
-                                        <span class="fixture-diff-badge">{{ (match.points_1 - match.points_2)|abs }}</span>
+                                        <span class="fixture-diff-badge {% if match.winner == 1 %}diff-left{% elif match.winner == 2 %}diff-right{% endif %}">
+                                            {% if match.winner == 1 %}◀{% elif match.winner == 2 %}▶{% endif %} {{ match.points_diff }}
+                                        </span>
                                     </div>
                                 </div>
                                 
                                 <!-- Team 2 -->
-                                <div class="fixture-team {% if match.points_2 > match.points_1 %}winner{% endif %}">
+                                <div class="fixture-team {% if match.winner == 2 %}winner{% endif %}">
                                     <span class="fixture-team-name">
-                                        {% if match.points_2 > match.points_1 %}✓ {% endif %}{{ match.team_2 }}
+                                        {% if match.winner == 2 %}✓ {% endif %}{{ match.team_2 }}
                                     </span>
+                                    <div class="fixture-team-details">
+                                        <span class="fixture-captain">👑 {{ match.captains_2|join(' • ') }}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <!-- Captains row at bottom -->
-                            <div class="fixture-captains-row">
-                                <span class="cap-side">{{ match.captains_1|join(' • ') }}</span>
-                                <span class="cap-divider">👑</span>
-                                <span class="cap-side">{{ match.captains_2|join(' • ') }}</span>
+                            
+                            <!-- Unique Players (Hidden by default) -->
+                            <div class="fixture-card-unique" id="mobile-unique-{{ loop.index }}" style="display: none;">
+                                <div class="unique-section">
+                                    <div class="unique-header">{{ match.team_1 }}</div>
+                                    <div class="unique-players">
+                                        {% for player in match.team_1_unique %}
+                                            <span class="unique-tag status-{{ player.status }}">{{ player.name }}</span>
+                                        {% else %}
+                                            <span class="unique-none">لا يوجد</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <div class="unique-section">
+                                    <div class="unique-header">{{ match.team_2 }}</div>
+                                    <div class="unique-players">
+                                        {% for player in match.team_2_unique %}
+                                            <span class="unique-tag status-{{ player.status }}">{{ player.name }}</span>
+                                        {% else %}
+                                            <span class="unique-none">لا يوجد</span>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="fixture-card-expand">
+                                <span class="expand-hint" id="expand-hint-{{ loop.index }}">▼ اللاعبين المميزين</span>
                             </div>
                         </div>
                         {% endfor %}
@@ -334,10 +363,10 @@
                                 <tr>
                                     <th>م</th>
                                     <th>الفريق</th>
-                                    <th>ن.ج</th>
-                                    <th>ن.د</th>
+                                    <th>نقاط الجولة</th>
+                                    <th>نقاط الدوري</th>
                                     <th>+/-</th>
-                                    <th class="captains-cell">الكباتن</th>
+                                    <th class="captains-col-header">الكباتن</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -366,7 +395,11 @@
                                             <span class="rank-same">-</span>
                                         {% endif %}
                                     </td>
-                                    <td class="captains-cell">{{ team.captains|join(' • ') }}</td>
+                                    <td class="captains-stacked-cell">
+                                        {% for cap in team.captains %}
+                                            <div class="captain-row">👑 {{ cap }}</div>
+                                        {% endfor %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -383,7 +416,7 @@
                             <span class="msh-change">+/-</span>
                         </div>
                         {% for team in data.standings %}
-                        <div class="mobile-standing-row {% if loop.index <= 3 %}top-three{% endif %} {% if team.result == 'W' %}row-win{% elif team.result == 'L' %}row-loss{% endif %}">
+                        <div class="mobile-standing-row {% if loop.index <= 3 %}top-three{% endif %} {% if team.result == 'W' %}row-win{% elif team.result == 'L' %}row-loss{% endif %}" onclick="toggleStandingDetails({{ loop.index }})">
                             <div class="mobile-standing-main">
                                 <span class="ms-rank">
                                     {% if loop.index == 1 %}🥇{% elif loop.index == 2 %}🥈{% elif loop.index == 3 %}🥉{% else %}{{ team.rank }}{% endif %}
@@ -401,6 +434,16 @@
                                     {% endif %}
                                 </span>
                             </div>
+                            <div class="mobile-standing-details" id="standing-details-{{ loop.index }}" style="display: none;">
+                                <div class="ms-detail">
+                                    <span class="ms-label">الكباتن:</span>
+                                    <span class="ms-value captains-value">
+                                        {% for cap in team.captains %}
+                                            <span class="mobile-captain">👑 {{ cap }}</span>
+                                        {% endfor %}
+                                    </span>
+                                </div>
+                            </div>
                         </div>
                         {% endfor %}
                     </div>
@@ -416,5 +459,36 @@
         <p>دوري المدن - بطولة عشاق الفانتازي في ليبيا</p>
         <p style="margin-top: 0.25rem; color: #666;">كل فريق يتكون من 3 مديرين</p>
     </footer>
+
+    <script>
+        // Toggle unique players row (desktop)
+        function toggleUnique(index) {
+            const row = document.getElementById('unique-row-' + index);
+            if (row) {
+                row.style.display = row.style.display === 'none' ? 'table-row' : 'none';
+            }
+        }
+        
+        // Toggle unique players (mobile)
+        function toggleMobileUnique(index) {
+            const uniqueDiv = document.getElementById('mobile-unique-' + index);
+            const hint = document.getElementById('expand-hint-' + index);
+            if (uniqueDiv) {
+                const isHidden = uniqueDiv.style.display === 'none';
+                uniqueDiv.style.display = isHidden ? 'block' : 'none';
+                if (hint) {
+                    hint.textContent = isHidden ? '▲ اللاعبين المميزين' : '▼ اللاعبين المميزين';
+                }
+            }
+        }
+        
+        // Toggle standing details (mobile)
+        function toggleStandingDetails(index) {
+            const details = document.getElementById('standing-details-' + index);
+            if (details) {
+                details.style.display = details.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+    </script>
 </body>
 </html>

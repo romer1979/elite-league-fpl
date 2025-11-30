@@ -180,60 +180,7 @@ def get_cities_league_data():
         matches_data = fetch_json(f"https://fantasy.premierleague.com/api/leagues-h2h-matches/league/{CITIES_H2H_LEAGUE_ID}/?event={current_gw}", cookies)
         matches = matches_data.get('results', []) if matches_data else []
         
-        # 5) Calculate live points for each manager
-        def calculate_manager_points(entry_id):
-            """Calculate live points for a single manager with special rules"""
-            picks_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{entry_id}/event/{current_gw}/picks/", cookies)
-            if not picks_data:
-                return 0, '-', 0
-            
-            picks = picks_data.get('picks', [])
-            chip = picks_data.get('active_chip')
-            hits = picks_data.get('entry_history', {}).get('event_transfers_cost', 0)
-            
-            # Find captain
-            captain_id = next((p['element'] for p in picks if p.get('is_captain')), None)
-            captain_name = player_info.get(captain_id, {}).get('name', '-') if captain_id else '-'
-            
-            # Calculate points for starting 11 only (ignore bench boost)
-            total_points = 0
-            for i, pick in enumerate(picks[:11]):  # Only first 11
-                pid = pick['element']
-                pts = live_elements.get(pid, {}).get('total_points', 0)
-                
-                # Captain gets 2x (TC is treated as regular captain - 2x not 3x)
-                if pick.get('is_captain'):
-                    cap_minutes = live_elements.get(pid, {}).get('minutes', 0)
-                    cap_team = player_info.get(pid, {}).get('team')
-                    cap_played = cap_minutes > 0
-                    cap_done = team_fixture_done.get(cap_team, False)
-                    
-                    if cap_played:
-                        pts *= 2  # Always 2x, even with TC
-                    elif cap_done:
-                        pts = 0  # Captain didn't play and game is done
-                    # else: multiplier stays 1 (game not started)
-                    
-                elif pick.get('is_vice_captain'):
-                    # Check if captain didn't play
-                    cap_id = next((p['element'] for p in picks if p.get('is_captain')), None)
-                    if cap_id:
-                        cap_minutes = live_elements.get(cap_id, {}).get('minutes', 0)
-                        cap_team = player_info.get(cap_id, {}).get('team')
-                        cap_done = team_fixture_done.get(cap_team, False)
-                        
-                        if cap_minutes == 0 and cap_done:
-                            # VC becomes captain with 2x
-                            vc_minutes = live_elements.get(pid, {}).get('minutes', 0)
-                            if vc_minutes > 0:
-                                pts *= 2
-                
-                total_points += pts
-            
-            # Auto-subs calculation
-            sub_points = calculate_auto_subs(picks, live_elements, player_info, team_fixture_done)
-            
-            return total_points + sub_points - hits, captain_name, hits
+        # 5) Helper functions for points calculation
         
         def calculate_auto_subs(picks, live_elements, player_info, team_fixture_done):
             """Calculate auto-sub points"""
@@ -310,19 +257,123 @@ def get_cities_league_data():
             
             return sub_points
         
-        # 6) Calculate team points
+        def calculate_points_from_picks(picks_data, entry_id):
+            """Calculate live points from already fetched picks data"""
+            if not picks_data:
+                return 0, '-', 0
+            
+            picks = picks_data.get('picks', [])
+            chip = picks_data.get('active_chip')
+            hits = picks_data.get('entry_history', {}).get('event_transfers_cost', 0)
+            
+            # Find captain
+            captain_id = next((p['element'] for p in picks if p.get('is_captain')), None)
+            captain_name = player_info.get(captain_id, {}).get('name', '-') if captain_id else '-'
+            
+            # Calculate points for starting 11 only (ignore bench boost)
+            total_points = 0
+            for i, pick in enumerate(picks[:11]):
+                pid = pick['element']
+                pts = live_elements.get(pid, {}).get('total_points', 0)
+                
+                # Captain gets 2x (TC is treated as regular captain - 2x not 3x)
+                if pick.get('is_captain'):
+                    cap_minutes = live_elements.get(pid, {}).get('minutes', 0)
+                    cap_team = player_info.get(pid, {}).get('team')
+                    cap_played = cap_minutes > 0
+                    cap_done = team_fixture_done.get(cap_team, False)
+                    
+                    if cap_played:
+                        pts *= 2
+                    elif cap_done:
+                        pts = 0
+                    
+                elif pick.get('is_vice_captain'):
+                    cap_id = next((p['element'] for p in picks if p.get('is_captain')), None)
+                    if cap_id:
+                        cap_minutes = live_elements.get(cap_id, {}).get('minutes', 0)
+                        cap_team = player_info.get(cap_id, {}).get('team')
+                        cap_done = team_fixture_done.get(cap_team, False)
+                        
+                        if cap_minutes == 0 and cap_done:
+                            vc_minutes = live_elements.get(pid, {}).get('minutes', 0)
+                            if vc_minutes > 0:
+                                pts *= 2
+                
+                total_points += pts
+            
+            # Auto-subs calculation
+            sub_points = calculate_auto_subs(picks, live_elements, player_info, team_fixture_done)
+            
+            return total_points + sub_points - hits, captain_name, hits
+        
+        # 6) Calculate team points and store picks
         team_live_points = {}
         team_captains = {}
+        team_picks = {}  # Store picks for each team: team_name -> set of player_ids
         
         for team_name, entry_ids in TEAMS_FPL_IDS.items():
             total_pts = 0
             captains = []
+            all_picks = set()
+            
             for entry_id in entry_ids:
-                pts, cap_name, _ = calculate_manager_points(entry_id)
-                total_pts += pts
-                captains.append(cap_name)
+                # Get picks for this manager (single API call per manager)
+                picks_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{entry_id}/event/{current_gw}/picks/", cookies)
+                if picks_data:
+                    picks = picks_data.get('picks', [])
+                    # Store starting 11 player IDs
+                    for p in picks[:11]:
+                        all_picks.add(p['element'])
+                    
+                    # Calculate points using the same picks_data
+                    pts, cap_name, _ = calculate_points_from_picks(picks_data, entry_id)
+                    total_pts += pts
+                    captains.append(cap_name)
+                else:
+                    captains.append('-')
+            
             team_live_points[team_name] = total_pts
             team_captains[team_name] = captains
+            team_picks[team_name] = all_picks
+        
+        def get_unique_players(team_1, team_2):
+            """Get unique players for each team (players not in opponent's team)"""
+            picks_1 = team_picks.get(team_1, set())
+            picks_2 = team_picks.get(team_2, set())
+            
+            unique_1 = picks_1 - picks_2
+            unique_2 = picks_2 - picks_1
+            
+            def format_unique(player_ids):
+                result = []
+                for pid in player_ids:
+                    info = player_info.get(pid, {})
+                    minutes = live_elements.get(pid, {}).get('minutes', 0)
+                    pts = live_elements.get(pid, {}).get('total_points', 0)
+                    
+                    # Determine status
+                    if minutes > 0:
+                        status = 'played'
+                    else:
+                        team_id = info.get('team')
+                        if team_fixture_done.get(team_id, False):
+                            status = 'benched'
+                        else:
+                            status = 'pending'
+                    
+                    result.append({
+                        'name': info.get('name', 'Unknown'),
+                        'points': pts,
+                        'status': status,
+                        'minutes': minutes
+                    })
+                
+                # Sort by points descending
+                result.sort(key=lambda x: -x['points'])
+                return result
+            
+            return format_unique(unique_1), format_unique(unique_2)
         
         # 7) Build H2H match results and calculate match outcomes
         h2h_matches = []
@@ -343,20 +394,30 @@ def get_cities_league_data():
                 if pts_1 > pts_2:
                     match_results[team_1] = 'W'
                     match_results[team_2] = 'L'
+                    winner = 1
                 elif pts_2 > pts_1:
                     match_results[team_2] = 'W'
                     match_results[team_1] = 'L'
+                    winner = 2
                 else:
                     match_results[team_1] = 'D'
                     match_results[team_2] = 'D'
+                    winner = 0
+                
+                # Get unique players
+                unique_1, unique_2 = get_unique_players(team_1, team_2)
                 
                 h2h_matches.append({
                     'team_1': team_1,
                     'team_2': team_2,
                     'points_1': pts_1,
                     'points_2': pts_2,
+                    'points_diff': abs(pts_1 - pts_2),
+                    'winner': winner,
                     'captains_1': format_captains(team_captains.get(team_1, [])),
                     'captains_2': format_captains(team_captains.get(team_2, [])),
+                    'team_1_unique': unique_1,
+                    'team_2_unique': unique_2,
                 })
         
         # 8) Build standings with projected points
