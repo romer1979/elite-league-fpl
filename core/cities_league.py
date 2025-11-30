@@ -542,18 +542,43 @@ def get_cities_league_data():
             team_captains[team_name] = captains
             team_picks_counter[team_name] = picks_counter
         
-        # Find best team (team of the week)
-        best_team = max(team_live_points.items(), key=lambda x: x[1]) if team_live_points else (None, 0)
+        # Find best team(s) (team of the week) - show all tied winners
+        if team_live_points:
+            max_team_pts = max(team_live_points.values())
+            best_teams = [name for name, pts in team_live_points.items() if pts == max_team_pts]
+            best_team = (', '.join(best_teams), max_team_pts)
+        else:
+            best_team = (None, 0)
         
-        # Find best manager (star of the week)
-        best_manager = max(all_managers, key=lambda x: x['points']) if all_managers else {'name': '-', 'points': 0}
-        
-        # Fetch best manager's actual name (single API call)
-        if best_manager.get('entry_id'):
-            entry_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{best_manager['entry_id']}/", cookies)
-            if entry_data:
-                best_manager['name'] = entry_data.get('player_first_name', '') + ' ' + entry_data.get('player_last_name', '')
-                best_manager['name'] = best_manager['name'].strip()
+        # Find best manager(s) (star of the week) - show all tied winners
+        if all_managers:
+            max_manager_pts = max(m['points'] for m in all_managers)
+            best_managers = [m for m in all_managers if m['points'] == max_manager_pts]
+            
+            # Fetch all best managers' actual names
+            best_manager_names = []
+            best_manager_teams = []
+            for mgr in best_managers:
+                if mgr.get('entry_id'):
+                    entry_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{mgr['entry_id']}/", cookies)
+                    if entry_data:
+                        full_name = entry_data.get('player_first_name', '') + ' ' + entry_data.get('player_last_name', '')
+                        best_manager_names.append(full_name.strip())
+                        best_manager_teams.append(mgr.get('team', ''))
+                    else:
+                        best_manager_names.append(mgr.get('name', '-'))
+                        best_manager_teams.append(mgr.get('team', ''))
+                else:
+                    best_manager_names.append(mgr.get('name', '-'))
+                    best_manager_teams.append(mgr.get('team', ''))
+            
+            best_manager = {
+                'name': ', '.join(best_manager_names),
+                'points': max_manager_pts,
+                'team': ', '.join(best_manager_teams) if len(set(best_manager_teams)) > 1 else best_manager_teams[0] if best_manager_teams else ''
+            }
+        else:
+            best_manager = {'name': '-', 'points': 0, 'team': ''}
         
         def get_unique_players(team_1, team_2):
             """Get unique players for each team based on count difference.
