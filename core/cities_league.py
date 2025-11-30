@@ -180,6 +180,13 @@ def get_cities_league_data():
         matches_data = fetch_json(f"https://fantasy.premierleague.com/api/leagues-h2h-matches/league/{CITIES_H2H_LEAGUE_ID}/?event={current_gw}", cookies)
         matches = matches_data.get('results', []) if matches_data else []
         
+        # 4b) Get H2H standings to get manager names (single API call)
+        league_standings = fetch_json(f"https://fantasy.premierleague.com/api/leagues-h2h/{CITIES_H2H_LEAGUE_ID}/standings/", cookies)
+        manager_names = {}
+        if league_standings:
+            for entry in league_standings.get('standings', {}).get('results', []):
+                manager_names[entry['entry']] = entry.get('player_name', f"Manager {entry['entry']}")
+        
         # 5) Helper functions for points calculation
         
         def calculate_auto_subs(picks, live_elements, player_info, team_fixture_done):
@@ -332,15 +339,11 @@ def get_cities_league_data():
                     total_pts += pts
                     captains.append(cap_name)
                     
-                    # Get manager name from entry history
-                    manager_name = picks_data.get('entry_history', {}).get('entry', entry_id)
-                    # Fetch manager name from entry endpoint
-                    entry_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{entry_id}/", cookies)
-                    if entry_data:
-                        manager_name = entry_data.get('player_first_name', '') + ' ' + entry_data.get('player_last_name', '')
+                    # Get manager name from pre-fetched standings data
+                    mgr_name = manager_names.get(entry_id, f"Manager {entry_id}")
                     
                     all_managers.append({
-                        'name': manager_name.strip(),
+                        'name': mgr_name,
                         'points': pts,
                         'team': team_name,
                         'entry_id': entry_id
