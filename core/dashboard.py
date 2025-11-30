@@ -139,24 +139,41 @@ class DashboardData:
         
         return group
     
-    def _is_fixture_complete(self, team_id):
-        """Check if team's fixture is complete"""
+    def _is_game_complete_or_postponed(self, team_id):
+        """Check if team's game is complete or postponed (started OR postponed)"""
         if team_id in POSTPONED_GAMES:
+            return True
+        # Check team_fixture_started first
+        if self.team_fixture_started.get(team_id, False):
             return True
         for fixture in self.fixtures:
             if fixture['team_h'] == team_id or fixture['team_a'] == team_id:
-                return fixture.get('finished', False) or fixture.get('kickoff_time') is None
+                started = fixture.get('started', False)
+                is_postponed = fixture.get('kickoff_time') is None
+                return started or is_postponed
         return False
     
-    def _are_all_fixtures_complete(self, team_id):
-        """Check if all of a team's fixtures are complete"""
+    def _are_all_team_fixtures_complete_or_postponed(self, team_id):
+        """Check if all of a team's fixtures are complete or postponed"""
         team_fixtures = [f for f in self.fixtures if f['team_h'] == team_id or f['team_a'] == team_id]
         if not team_fixtures:
             return True
-        return all(f.get('finished', False) or f.get('kickoff_time') is None for f in team_fixtures)
+        for fixture in team_fixtures:
+            if not (fixture.get('started', False) or fixture.get('kickoff_time') is None):
+                return False
+        return True
     
     def _calculate_sub_points(self, picks):
-        """Calculate auto-substitution points"""
+        """
+        FPL auto-subs (live/expected):
+          - For each non-playing starter (XI order), scan bench in order.
+          - If a bench player has not played AND his team hasn't started/postponed -> RESERVE him for this starter and stop scanning (adds 0 now).
+          - If a bench player has not played AND his team has started/postponed -> reject (DNP).
+          - If a bench player has played -> test GK↔GK rule and formation; accept first valid one.
+          - Formation after swap must be: GK=1, DEF 3–5, MID 2–5, FWD 1–3.
+          - A bench player can be used/reserved at most once.
+        Returns total points currently added by accepted bench subs.
+        """
         def pos_of(eid):
             return self.player_info[eid]['position']
         
@@ -164,61 +181,74 @@ class DashboardData:
             return g == 1 and 3 <= d <= 5 and 2 <= m <= 5 and 1 <= f <= 3
         
         def team_done(eid):
-            return self._are_all_fixtures_complete(self.player_info[eid]['team'])
+            return self._are_all_team_fixtures_complete_or_postponed(self.player_info[eid]['team'])
         
         starters = picks[:11]
         bench = picks[11:]
         
+        # Baseline formation from original XI
         d = sum(1 for p in starters if pos_of(p['element']) == 2)
         m = sum(1 for p in starters if pos_of(p['element']) == 3)
         f = sum(1 for p in starters if pos_of(p['element']) == 4)
         g = sum(1 for p in starters if pos_of(p['element']) == 1)
         
+        # Non-playing starters eligible for auto-sub (their team's game started/postponed)
         non_playing = [
             p for p in starters
             if self.live_elements_dict.get(p['element'], {}).get('minutes', 0) == 0
             and team_done(p['element'])
         ]
         
-        used_bench = set()
+        used_bench_ids = set()  # includes both accepted AND reserved bench players
         sub_points = 0
         
         for starter in non_playing:
-            s_pos = pos_of(starter['element'])
+            s_id = starter['element']
+            s_pos = pos_of(s_id)
             
             for b in bench:
                 b_id = b['element']
-                if b_id in used_bench:
+                if b_id in used_bench_ids:
                     continue
                 
                 b_pos = pos_of(b_id)
                 b_min = self.live_elements_dict.get(b_id, {}).get('minutes', 0)
+                b_played = b_min > 0
                 b_done = team_done(b_id)
                 
-                if (s_pos == 1) != (b_pos == 1):
+                # GK ↔ GK only; outfield ↔ outfield only
+                if (s_pos == 1 and b_pos != 1) or (s_pos != 1 and b_pos == 1):
                     continue
                 
-                if b_min == 0 and not b_done:
-                    used_bench.add(b_id)
-                    break
+                # Not played yet and team not started -> RESERVE this bench slot for this starter
+                if not b_played and not b_done:
+                    used_bench_ids.add(b_id)  # reserved; adds 0 now
+                    break  # stop scanning further bench for this starter
                 
-                if b_min == 0 and b_done:
+                # Not played and team started -> DNP, reject and continue
+                if not b_played and b_done:
                     continue
                 
+                # Bench has played -> simulate swap and validate formation
                 d2, m2, f2, g2 = d, m, f, g
-                for pos, delta in [(s_pos, -1), (b_pos, 1)]:
-                    if pos == 2: d2 += delta
-                    elif pos == 3: m2 += delta
-                    elif pos == 4: f2 += delta
-                    elif pos == 1: g2 += delta
+                if   s_pos == 2: d2 -= 1
+                elif s_pos == 3: m2 -= 1
+                elif s_pos == 4: f2 -= 1
+                elif s_pos == 1: g2 -= 1
+                
+                if   b_pos == 2: d2 += 1
+                elif b_pos == 3: m2 += 1
+                elif b_pos == 4: f2 += 1
+                elif b_pos == 1: g2 += 1
                 
                 if not formation_ok(d2, m2, f2, g2):
                     continue
                 
+                # Accept this bench player
                 sub_points += self.live_elements_dict[b_id]['total_points']
-                used_bench.add(b_id)
-                d, m, f, g = d2, m2, f2, g2
-                break
+                used_bench_ids.add(b_id)
+                d, m, f, g = d2, m2, f2, g2  # commit formation for next substitutions
+                break  # move to next non-playing starter
         
         return sub_points
     
@@ -228,7 +258,7 @@ class DashboardData:
         captain_data = self.live_elements_dict.get(captain_id, {})
         captain_played = captain_data.get('minutes', 0) > 0
         captain_team = self.player_info[captain_id]['team'] if captain_id else None
-        captain_complete = captain_team and self._is_fixture_complete(captain_team)
+        captain_team_game_complete_or_postponed = captain_team and self._is_game_complete_or_postponed(captain_team)
         
         players = picks[:15] if chip == 'bboost' else picks[:11]
         points = 0
@@ -241,12 +271,12 @@ class DashboardData:
             if pick.get('is_captain'):
                 if captain_played:
                     mult = 3 if chip == '3xc' else 2
-                elif captain_complete:
+                elif captain_team_game_complete_or_postponed:
                     mult = 0
                 else:
                     mult = 1
             elif pick.get('is_vice_captain'):
-                if captain_complete and not captain_played:
+                if captain_team_game_complete_or_postponed and not captain_played:
                     mult = 3 if chip == '3xc' else 2
                 else:
                     mult = 1

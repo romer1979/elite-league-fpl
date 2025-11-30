@@ -163,14 +163,34 @@ def get_arab_league_data():
         # 3) Get fixtures
         fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={current_gw}", cookies) or []
         
-        # Build team fixture status - only finished or postponed counts as "done"
-        team_fixture_done = {}
+        # Build team fixture started status
+        team_fixture_started = {}
         for fix in fixtures:
-            finished = fix.get('finished') or fix.get('finished_provisional')
-            postponed = fix.get('kickoff_time') is None
-            done = finished or postponed  # NOT started - only finished/postponed
-            team_fixture_done[fix['team_h']] = done
-            team_fixture_done[fix['team_a']] = done
+            started = fix.get('started', False)
+            team_fixture_started[fix['team_h']] = started
+            team_fixture_started[fix['team_a']] = started
+        
+        def is_game_complete_or_postponed(team_id):
+            """Check if team's game is complete or postponed (started OR postponed)"""
+            game_started = team_fixture_started.get(team_id, False)
+            if game_started:
+                return True
+            for fix in fixtures:
+                if fix['team_h'] == team_id or fix['team_a'] == team_id:
+                    started = fix.get('started', False)
+                    is_postponed = fix.get('kickoff_time') is None
+                    return started or is_postponed
+            return False
+        
+        def are_all_team_fixtures_complete_or_postponed(team_id):
+            """Check if all team fixtures are complete or postponed"""
+            team_fixtures = [fix for fix in fixtures if fix['team_h'] == team_id or fix['team_a'] == team_id]
+            if not team_fixtures:
+                return True
+            for fix in team_fixtures:
+                if not (fix.get('started', False) or fix.get('kickoff_time') is None):
+                    return False
+            return True
         
         # 4) Get current GW matches
         matches_data = fetch_json(f"https://fantasy.premierleague.com/api/leagues-h2h-matches/league/{ARAB_H2H_LEAGUE_ID}/?event={current_gw}", cookies)
@@ -188,8 +208,8 @@ def get_arab_league_data():
             """
             FPL auto-subs (live/expected):
               - For each non-playing starter (XI order), scan bench in order.
-              - If a bench player has not played AND his team hasn't finished/postponed -> RESERVE him for this starter and stop scanning (adds 0 now).
-              - If a bench player has not played AND his team has finished/postponed -> reject (DNP).
+              - If a bench player has not played AND his team hasn't started/postponed -> RESERVE him for this starter and stop scanning (adds 0 now).
+              - If a bench player has not played AND his team has started/postponed -> reject (DNP).
               - If a bench player has played -> test GK↔GK rule and formation; accept first valid one.
               - Formation after swap must be: GK=1, DEF 3–5, MID 2–5, FWD 1–3.
               - A bench player can be used/reserved at most once.
@@ -201,18 +221,8 @@ def get_arab_league_data():
             def formation_ok(d, m, f, g):
                 return (g == 1 and 3 <= d <= 5 and 2 <= m <= 5 and 1 <= f <= 3)
             
-            def are_all_team_fixtures_complete_or_postponed(team_id):
-                team_fixtures = [fix for fix in fixtures if fix['team_h'] == team_id or fix['team_a'] == team_id]
-                if not team_fixtures:
-                    return True
-                for fix in team_fixtures:
-                    if not (fix.get('started', False) or fix.get('kickoff_time') is None):
-                        return False
-                return True
-            
             def team_done(eid):
-                team_id = player_info.get(eid, {}).get('team')
-                return are_all_team_fixtures_complete_or_postponed(team_id)
+                return are_all_team_fixtures_complete_or_postponed(player_info.get(eid, {}).get('team'))
             
             starters = picks[:11]
             bench = picks[11:]
@@ -295,40 +305,40 @@ def get_arab_league_data():
             vice_captain_id = next((p['element'] for p in picks if p.get('is_vice_captain')), None)
             captain_name = player_info.get(captain_id, {}).get('name', '-') if captain_id else '-'
             
-            # Check captain status
+            # Check captain status using is_game_complete_or_postponed
             captain_minutes = live_elements.get(captain_id, {}).get('minutes', 0) if captain_id else 0
             captain_team = player_info.get(captain_id, {}).get('team') if captain_id else None
             captain_played = captain_minutes > 0
-            captain_team_done = team_fixture_done.get(captain_team, False) if captain_team else False
+            captain_team_game_complete_or_postponed = is_game_complete_or_postponed(captain_team) if captain_team else False
             
             total_points = 0
             for pick in picks[:11]:
                 pid = pick['element']
                 pts = live_elements.get(pid, {}).get('total_points', 0)
                 
-                # Captain logic (TC treated as 2x for team leagues)
+                # Captain logic (always 2x for team leagues, no 3xc)
                 if pick.get('is_captain'):
                     if captain_played:
                         pts *= 2  # Captain played - gets 2x
-                    elif captain_team_done:
-                        pts *= 0  # Captain didn't play and team done - 0 points (VC takes over)
+                    elif captain_team_game_complete_or_postponed:
+                        pts *= 0  # Captain didn't play and team started/postponed - 0 points (VC takes over)
                     else:
-                        pts *= 1  # Captain's team hasn't played - wait (1x for now)
+                        pts *= 1  # Captain's team hasn't started - wait (1x for now)
                 
                 # Vice-captain logic
                 elif pick.get('is_vice_captain'):
-                    if captain_team_done and not captain_played:
+                    if captain_team_game_complete_or_postponed and not captain_played:
                         # Captain didn't play and his team is done - VC gets captaincy
                         vc_minutes = live_elements.get(pid, {}).get('minutes', 0)
                         vc_team = player_info.get(pid, {}).get('team')
-                        vc_team_done = team_fixture_done.get(vc_team, False)
+                        vc_team_game_complete_or_postponed = is_game_complete_or_postponed(vc_team) if vc_team else False
                         
                         if vc_minutes > 0:
                             pts *= 2  # VC played - gets 2x
-                        elif vc_team_done:
+                        elif vc_team_game_complete_or_postponed:
                             pts *= 0  # VC also didn't play and team done - 0
                         else:
-                            pts *= 1  # VC's team hasn't played yet - wait
+                            pts *= 1  # VC's team hasn't started yet - wait
                 
                 total_points += pts
             
@@ -351,8 +361,7 @@ def get_arab_league_data():
                 return g == 1 and 3 <= d <= 5 and 2 <= m <= 5 and 1 <= f <= 3
             
             def team_done(eid):
-                team_id = player_info.get(eid, {}).get('team')
-                return team_fixture_done.get(team_id, False)
+                return are_all_team_fixtures_complete_or_postponed(player_info.get(eid, {}).get('team'))
             
             starters = picks[:11]
             bench = picks[11:]
