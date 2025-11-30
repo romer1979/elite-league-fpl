@@ -65,7 +65,50 @@ def home():
         if elite_data.get('gw_finished') or elite_data.get('is_live'):
             save_standings(gameweek, elite_standings)
     
-    return render_template('home.html', elite_standings=elite_standings)
+    # Get The 100 elimination zone (96-105)
+    the100_elimination = []
+    try:
+        the100_data = get_the100_standings()
+        if the100_data.get('standings'):
+            all_standings = the100_data['standings']
+            # Get rankings 96-105 (indices 95-104)
+            the100_elimination = all_standings[95:105] if len(all_standings) >= 105 else all_standings[-10:]
+    except Exception as e:
+        print(f"Error fetching The 100: {e}")
+    
+    # Get Cities League top 10
+    cities_standings = []
+    try:
+        cities_data = get_cities_league_data()
+        if cities_data and cities_data.get('standings'):
+            cities_standings = cities_data['standings'][:10]
+    except Exception as e:
+        print(f"Error fetching Cities League: {e}")
+    
+    # Get Libyan League top 10
+    libyan_standings = []
+    try:
+        libyan_data = get_libyan_league_data()
+        if libyan_data and libyan_data.get('standings'):
+            libyan_standings = libyan_data['standings'][:10]
+    except Exception as e:
+        print(f"Error fetching Libyan League: {e}")
+    
+    # Get Arab Championship top 10
+    arab_standings = []
+    try:
+        arab_data = get_arab_league_data()
+        if arab_data and arab_data.get('standings'):
+            arab_standings = arab_data['standings'][:10]
+    except Exception as e:
+        print(f"Error fetching Arab League: {e}")
+    
+    return render_template('home.html', 
+                          elite_standings=elite_standings,
+                          the100_elimination=the100_elimination,
+                          cities_standings=cities_standings,
+                          libyan_standings=libyan_standings,
+                          arab_standings=arab_standings)
 
 
 @app.route('/league/elite')
