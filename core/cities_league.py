@@ -361,6 +361,13 @@ def get_cities_league_data():
         # Find best manager (star of the week)
         best_manager = max(all_managers, key=lambda x: x['points']) if all_managers else {'name': '-', 'points': 0}
         
+        # Fetch best manager's actual name (single API call)
+        if best_manager.get('entry_id'):
+            entry_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{best_manager['entry_id']}/", cookies)
+            if entry_data:
+                best_manager['name'] = entry_data.get('player_first_name', '') + ' ' + entry_data.get('player_last_name', '')
+                best_manager['name'] = best_manager['name'].strip()
+        
         def get_unique_players(team_1, team_2):
             """Get unique players for each team based on count difference.
             If team 1 has 3 Salah and team 2 has 1 Salah, team 1's unique shows 'Salah x2'"""

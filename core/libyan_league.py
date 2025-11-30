@@ -339,6 +339,13 @@ def get_libyan_league_data():
         best_team = max(team_live_points.items(), key=lambda x: x[1]) if team_live_points else (None, 0)
         best_manager = max(all_managers, key=lambda x: x['points']) if all_managers else {'name': '-', 'points': 0}
         
+        # Fetch best manager's actual name (single API call)
+        if best_manager.get('entry_id'):
+            entry_data = fetch_json(f"https://fantasy.premierleague.com/api/entry/{best_manager['entry_id']}/", cookies)
+            if entry_data:
+                best_manager['name'] = entry_data.get('player_first_name', '') + ' ' + entry_data.get('player_last_name', '')
+                best_manager['name'] = best_manager['name'].strip()
+        
         def get_unique_players(team_1, team_2):
             counter_1 = team_picks_counter.get(team_1, Counter())
             counter_2 = team_picks_counter.get(team_2, Counter())
