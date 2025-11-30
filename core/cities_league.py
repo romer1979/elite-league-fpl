@@ -166,13 +166,13 @@ def get_cities_league_data():
         # 3) Get fixtures to check team status
         fixtures = fetch_json(f"https://fantasy.premierleague.com/api/fixtures/?event={current_gw}", cookies) or []
         
-        # Build team fixture status
+        # Build team fixture status - only finished or postponed counts as "done"
+        # Started but not finished means game is in progress
         team_fixture_done = {}
         for fix in fixtures:
             finished = fix.get('finished') or fix.get('finished_provisional')
-            started = fix.get('started', False)
             postponed = fix.get('kickoff_time') is None
-            done = finished or postponed or started
+            done = finished or postponed  # NOT started - only finished/postponed
             team_fixture_done[fix['team_h']] = done
             team_fixture_done[fix['team_a']] = done
         
@@ -189,33 +189,53 @@ def get_cities_league_data():
         
         # 5) Helper functions for points calculation
         
-        def calculate_auto_subs(picks, live_elements, player_info, team_fixture_done):
-            """Calculate auto-sub points"""
+        def calculate_auto_subs(picks, live_elements, player_info, fixtures):
+            """
+            FPL auto-subs (live/expected):
+              - For each non-playing starter (XI order), scan bench in order.
+              - If a bench player has not played AND his team hasn't finished/postponed -> RESERVE him for this starter and stop scanning (adds 0 now).
+              - If a bench player has not played AND his team has finished/postponed -> reject (DNP).
+              - If a bench player has played -> test GK↔GK rule and formation; accept first valid one.
+              - Formation after swap must be: GK=1, DEF 3–5, MID 2–5, FWD 1–3.
+              - A bench player can be used/reserved at most once.
+            Returns total points currently added by accepted bench subs.
+            """
             def pos_of(eid):
                 return player_info.get(eid, {}).get('position', 0)
             
             def formation_ok(d, m, f, g):
                 return (g == 1 and 3 <= d <= 5 and 2 <= m <= 5 and 1 <= f <= 3)
             
+            def are_all_team_fixtures_complete_or_postponed(team_id):
+                team_fixtures = [fix for fix in fixtures if fix['team_h'] == team_id or fix['team_a'] == team_id]
+                if not team_fixtures:
+                    return True
+                for fix in team_fixtures:
+                    if not (fix.get('started', False) or fix.get('kickoff_time') is None):
+                        return False
+                return True
+            
             def team_done(eid):
                 team_id = player_info.get(eid, {}).get('team')
-                return team_fixture_done.get(team_id, False)
+                return are_all_team_fixtures_complete_or_postponed(team_id)
             
             starters = picks[:11]
             bench = picks[11:]
             
+            # Baseline formation from original XI
             d = sum(1 for p in starters if pos_of(p['element']) == 2)
             m = sum(1 for p in starters if pos_of(p['element']) == 3)
             f = sum(1 for p in starters if pos_of(p['element']) == 4)
             g = sum(1 for p in starters if pos_of(p['element']) == 1)
             
+            # Non-playing starters eligible for auto-sub (their team's game started/postponed)
             non_playing_starters = [
                 p for p in starters
                 if live_elements.get(p['element'], {}).get('minutes', 0) == 0
                 and team_done(p['element'])
             ]
             
-            used_bench = set()
+            used_bench_ids = set()  # includes both accepted AND reserved bench players
             sub_points = 0
             
             for starter in non_playing_starters:
@@ -224,7 +244,7 @@ def get_cities_league_data():
                 
                 for b in bench:
                     b_id = b['element']
-                    if b_id in used_bench:
+                    if b_id in used_bench_ids:
                         continue
                     
                     b_pos = pos_of(b_id)
@@ -232,24 +252,27 @@ def get_cities_league_data():
                     b_played = b_min > 0
                     b_done = team_done(b_id)
                     
-                    # GK <-> GK only
+                    # GK ↔ GK only; outfield ↔ outfield only
                     if (s_pos == 1 and b_pos != 1) or (s_pos != 1 and b_pos == 1):
                         continue
                     
-                    if not b_played:
-                        if not b_done:
-                            used_bench.add(b_id)
-                            break
+                    # Not played yet and team not finished -> RESERVE this bench slot for this starter
+                    if not b_played and not b_done:
+                        used_bench_ids.add(b_id)  # reserved; adds 0 now
+                        break  # stop scanning further bench for this starter
+                    
+                    # Not played and team finished -> DNP, reject and continue
+                    if not b_played and b_done:
                         continue
                     
-                    # Check formation
+                    # Bench has played -> simulate swap and validate formation
                     d2, m2, f2, g2 = d, m, f, g
-                    if s_pos == 2: d2 -= 1
+                    if   s_pos == 2: d2 -= 1
                     elif s_pos == 3: m2 -= 1
                     elif s_pos == 4: f2 -= 1
                     elif s_pos == 1: g2 -= 1
                     
-                    if b_pos == 2: d2 += 1
+                    if   b_pos == 2: d2 += 1
                     elif b_pos == 3: m2 += 1
                     elif b_pos == 4: f2 += 1
                     elif b_pos == 1: g2 += 1
@@ -257,10 +280,11 @@ def get_cities_league_data():
                     if not formation_ok(d2, m2, f2, g2):
                         continue
                     
-                    sub_points += live_elements[b_id]['total_points']
-                    used_bench.add(b_id)
-                    d, m, f, g = d2, m2, f2, g2
-                    break
+                    # Accept this bench player
+                    sub_points += live_elements.get(b_id, {}).get('total_points', 0)
+                    used_bench_ids.add(b_id)
+                    d, m, f, g = d2, m2, f2, g2  # commit formation for next substitutions
+                    break  # move to next non-playing starter
             
             return sub_points
         
@@ -317,7 +341,7 @@ def get_cities_league_data():
                 total_points += pts
             
             # Auto-subs calculation
-            sub_points = calculate_auto_subs(picks, live_elements, player_info, team_fixture_done)
+            sub_points = calculate_auto_subs(picks, live_elements, player_info, fixtures)
             
             return total_points + sub_points - hits, captain_name, hits
         
