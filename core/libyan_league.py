@@ -263,36 +263,45 @@ def get_libyan_league_data():
             picks = picks_data.get('picks', [])
             hits = picks_data.get('entry_history', {}).get('event_transfers_cost', 0)
             
+            # Find captain and vice-captain
             captain_id = next((p['element'] for p in picks if p.get('is_captain')), None)
+            vice_captain_id = next((p['element'] for p in picks if p.get('is_vice_captain')), None)
             captain_name = player_info.get(captain_id, {}).get('name', '-') if captain_id else '-'
             
+            # Check captain status
+            captain_minutes = live_elements.get(captain_id, {}).get('minutes', 0) if captain_id else 0
+            captain_team = player_info.get(captain_id, {}).get('team') if captain_id else None
+            captain_played = captain_minutes > 0
+            captain_team_done = team_fixture_done.get(captain_team, False) if captain_team else False
+            
             total_points = 0
-            for i, pick in enumerate(picks[:11]):
+            for pick in picks[:11]:
                 pid = pick['element']
                 pts = live_elements.get(pid, {}).get('total_points', 0)
                 
+                # Captain logic (TC treated as 2x for team leagues)
                 if pick.get('is_captain'):
-                    cap_minutes = live_elements.get(pid, {}).get('minutes', 0)
-                    cap_team = player_info.get(pid, {}).get('team')
-                    cap_played = cap_minutes > 0
-                    cap_done = team_fixture_done.get(cap_team, False)
-                    
-                    if cap_played:
-                        pts *= 2
-                    elif cap_done:
-                        pts = 0
-                    
+                    if captain_played:
+                        pts *= 2  # Captain played - gets 2x
+                    elif captain_team_done:
+                        pts *= 0  # Captain didn't play and team done - 0 points (VC takes over)
+                    else:
+                        pts *= 1  # Captain's team hasn't played - wait (1x for now)
+                
+                # Vice-captain logic
                 elif pick.get('is_vice_captain'):
-                    cap_id = next((p['element'] for p in picks if p.get('is_captain')), None)
-                    if cap_id:
-                        cap_minutes = live_elements.get(cap_id, {}).get('minutes', 0)
-                        cap_team = player_info.get(cap_id, {}).get('team')
-                        cap_done = team_fixture_done.get(cap_team, False)
+                    if captain_team_done and not captain_played:
+                        # Captain didn't play and his team is done - VC gets captaincy
+                        vc_minutes = live_elements.get(pid, {}).get('minutes', 0)
+                        vc_team = player_info.get(pid, {}).get('team')
+                        vc_team_done = team_fixture_done.get(vc_team, False)
                         
-                        if cap_minutes == 0 and cap_done:
-                            vc_minutes = live_elements.get(pid, {}).get('minutes', 0)
-                            if vc_minutes > 0:
-                                pts *= 2
+                        if vc_minutes > 0:
+                            pts *= 2  # VC played - gets 2x
+                        elif vc_team_done:
+                            pts *= 0  # VC also didn't play and team done - 0
+                        else:
+                            pts *= 1  # VC's team hasn't played yet - wait
                 
                 total_points += pts
             
