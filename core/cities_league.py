@@ -19,31 +19,69 @@ CITIES_H2H_LEAGUE_ID = 1011575
 TIMEOUT = 15
 LEAGUE_TYPE = 'cities'
 
-# Previous GW standings (GW12) - INITIAL BASELINE ONLY
-# These are used ONLY if no database standings exist
-INITIAL_STANDINGS_GW = 12
-INITIAL_STANDINGS = {
+# Hardcoded standings per gameweek
+# When a new GW finishes, add its standings here
+STANDINGS_BY_GW = {
+    12: {
+        "جالو": 33,
+        "طرميسة": 24,
+        "غريان": 24,
+        "اوجلة": 21,
+        "حي 9 يونيو": 19,
+        "ترهونة": 19,
+        "الهضبة": 19,
+        "المحجوب": 18,
+        "القطرون": 18,
+        "بنغازي": 18,
+        "طرابلس": 18,
+        "درنه": 18,
+        "بوسليم": 16,
+        "الخمس": 16,
+        "البازة": 15,
+        "زليتن": 15,
+        "الفرناج": 15,
+        "الزاوية": 13,
+        "سوق الجمعة": 9,
+        "مصراتة": 9,
+    },
+    # GW13 standings will be added here after you provide them
+    13: {
     "جالو": 33,
-    "طرميسة": 24,
-    "غريان": 24,
-    "اوجلة": 21,
-    "حي 9 يونيو": 19,
+    "طرميسة": 27,
+    "غريان": 27,
+    "اوجلة": 24,
+    "درنه": 21,
+    "طرابلس": 21,
+    "القطرون": 21,
+    "بوسليم": 19,
     "ترهونة": 19,
     "الهضبة": 19,
-    "المحجوب": 18,
-    "القطرون": 18,
+    "حي 9 يونيو": 19,
+    "الخمس": 19,
     "بنغازي": 18,
-    "طرابلس": 18,
-    "درنه": 18,
-    "بوسليم": 16,
-    "الخمس": 16,
+    "المحجوب": 18,
+    "الزاوية": 16,
     "البازة": 15,
-    "زليتن": 15,
     "الفرناج": 15,
-    "الزاوية": 13,
-    "سوق الجمعة": 9,
+    "زليتن": 15,
+    "سوق الجمعة": 12,
     "مصراتة": 9,
+    }
 }
+
+def get_base_standings_hardcoded(current_gw):
+    """Get base standings from hardcoded values for previous GW"""
+    prev_gw = current_gw - 1
+    # Find the most recent available standings
+    available_gws = sorted(STANDINGS_BY_GW.keys(), reverse=True)
+    for gw in available_gws:
+        if gw <= prev_gw:
+            return STANDINGS_BY_GW[gw].copy(), gw
+    # Fallback to earliest available
+    if available_gws:
+        earliest = min(available_gws)
+        return STANDINGS_BY_GW[earliest].copy(), earliest
+    return {}, 0
 
 # Team definitions: team_name -> list of FPL entry IDs
 TEAMS_FPL_IDS = {
@@ -124,17 +162,22 @@ def get_previous_rank(team_name, standings_dict):
 
 def get_base_standings(current_gw):
     """Get the base standings to build upon.
-    Returns (standings_dict, source_gw) where source_gw is the GW the standings are from.
+    Priority: 1) Hardcoded standings, 2) Database, 3) Earliest available
+    Returns (standings_dict, source_gw)
     """
-    # Try to get standings from previous gameweek from database
     prev_gw = current_gw - 1
-    if prev_gw >= INITIAL_STANDINGS_GW:
-        db_standings = get_team_league_standings(LEAGUE_TYPE, prev_gw)
-        if db_standings:
-            return db_standings, prev_gw
     
-    # Fall back to initial standings
-    return INITIAL_STANDINGS.copy(), INITIAL_STANDINGS_GW
+    # First try hardcoded standings (most reliable)
+    if prev_gw in STANDINGS_BY_GW:
+        return STANDINGS_BY_GW[prev_gw].copy(), prev_gw
+    
+    # Then try database
+    db_standings = get_team_league_standings(LEAGUE_TYPE, prev_gw)
+    if db_standings:
+        return db_standings, prev_gw
+    
+    # Fall back to hardcoded function
+    return get_base_standings_hardcoded(current_gw)
 
 def get_cities_league_data():
     """Fetch all data for Cities League"""

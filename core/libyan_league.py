@@ -19,30 +19,66 @@ LIBYAN_H2H_LEAGUE_ID = 1231867
 TIMEOUT = 15
 LEAGUE_TYPE = 'libyan'
 
-# Previous GW standings (GW12) - INITIAL BASELINE ONLY
-INITIAL_STANDINGS_GW = 12
-INITIAL_STANDINGS = {
+# Hardcoded standings per gameweek
+STANDINGS_BY_GW = {
+    12: {
+        "الأخضر": 28,
+        "يفرن": 27,
+        "الصقور": 24,
+        "المستقبل": 24,
+        "الظهرة": 24,
+        "العروبة": 24,
+        "الشط": 22,
+        "النصر": 21,
+        "الجزيرة": 21,
+        "الصداقة": 18,
+        "الأولمبي": 18,
+        "الملعب": 18,
+        "النصر زليتن": 15,
+        "الأفريقي درنة": 15,
+        "الإخاء": 12,
+        "المدينة": 12,
+        "دارنس": 9,
+        "الأهلي طرابلس": 9,
+        "الشرارة": 9,
+        "السويحلي": 9,
+    },
+    # GW13 standings will be added here
+    13: {
     "الأخضر": 28,
     "يفرن": 27,
-    "الصقور": 24,
-    "المستقبل": 24,
-    "الظهرة": 24,
     "العروبة": 24,
+    "الصقور": 24,
+    "الظهرة": 24,
+    "المستقبل": 24,
     "الشط": 22,
     "النصر": 21,
     "الجزيرة": 21,
     "الصداقة": 18,
-    "الأولمبي": 18,
     "الملعب": 18,
-    "النصر زليتن": 15,
+    "الأولمبي": 18,
     "الأفريقي درنة": 15,
-    "الإخاء": 12,
+    "النصر زليتن": 15,
     "المدينة": 12,
-    "دارنس": 9,
-    "الأهلي طرابلس": 9,
-    "الشرارة": 9,
+    "الإخاء": 12,
     "السويحلي": 9,
+    "دارنس": 9,
+    "الشرارة": 9,
+    "الأهلي طرابلس": 9,
+    }
 }
+
+def get_base_standings_hardcoded(current_gw):
+    """Get base standings from hardcoded values"""
+    prev_gw = current_gw - 1
+    available_gws = sorted(STANDINGS_BY_GW.keys(), reverse=True)
+    for gw in available_gws:
+        if gw <= prev_gw:
+            return STANDINGS_BY_GW[gw].copy(), gw
+    if available_gws:
+        earliest = min(available_gws)
+        return STANDINGS_BY_GW[earliest].copy(), earliest
+    return {}, 0
 
 # Team definitions: team_name -> list of FPL entry IDs
 TEAMS_FPL_IDS = {
@@ -123,11 +159,18 @@ def get_previous_rank(team_name, standings_dict):
 def get_base_standings(current_gw):
     """Get the base standings to build upon."""
     prev_gw = current_gw - 1
-    if prev_gw >= INITIAL_STANDINGS_GW:
-        db_standings = get_team_league_standings(LEAGUE_TYPE, prev_gw)
-        if db_standings:
-            return db_standings, prev_gw
-    return INITIAL_STANDINGS.copy(), INITIAL_STANDINGS_GW
+    
+    # First try hardcoded standings
+    if prev_gw in STANDINGS_BY_GW:
+        return STANDINGS_BY_GW[prev_gw].copy(), prev_gw
+    
+    # Then try database
+    db_standings = get_team_league_standings(LEAGUE_TYPE, prev_gw)
+    if db_standings:
+        return db_standings, prev_gw
+    
+    # Fall back to hardcoded function
+    return get_base_standings_hardcoded(current_gw)
 
 def get_libyan_league_data():
     """Fetch all data for Libyan League"""
