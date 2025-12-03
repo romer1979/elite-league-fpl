@@ -816,6 +816,7 @@ def get_cities_league_data():
             'gameweek': current_gw,
             'total_teams': len(TEAMS_FPL_IDS),
             'is_live': is_live,
+            'gw_finished': all_finished and not is_live,
             'base_gw': base_gw,  # For debugging
             'last_updated_utc': datetime.utcnow().isoformat() + 'Z',  # UTC ISO format for JS conversion
             'best_team': {

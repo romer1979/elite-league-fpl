@@ -242,6 +242,10 @@
                 <span class="gw-number">{{ data.gameweek or '-' }}</span>
                 {% if data.is_live %}
                     <span class="status-badge live">🔴 مباشر</span>
+                {% elif data.gw_finished %}
+                    <span class="status-badge finished">✅ انتهت</span>
+                {% else %}
+                    <span class="status-badge not-started">⏳ لم تبدأ</span>
                 {% endif %}
                 <button class="refresh-btn" onclick="location.reload()">🔄</button>
                 <a href="/" class="stats-link">🏠</a>
@@ -304,9 +308,6 @@
             <section class="fixtures-section">
                 <h2 class="section-title">
                     ⚔️ مباريات الجولة
-                    {% if data.is_live %}
-                        <span class="live-badge">🔴 مباشر</span>
-                    {% endif %}
                 </h2>
                 
                 {% if data.matches %}
@@ -466,9 +467,6 @@
             <section class="standings-section">
                 <h2 class="section-title">
                     🏆 ترتيب الدوري
-                    {% if data.is_live %}
-                        <span class="live-badge">🔴 مباشر</span>
-                    {% endif %}
                 </h2>
                 
                 {% if data.standings %}
