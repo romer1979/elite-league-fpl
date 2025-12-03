@@ -5,6 +5,7 @@ Combines standings and live points in a single view with smart switching
 """
 
 import pandas as pd
+from datetime import datetime
 from collections import Counter
 from core.fpl_api import (
     get_bootstrap_data,
@@ -890,7 +891,8 @@ class DashboardData:
                 'gw_not_started': not self.fixtures_started and not self.gw_finished,
                 'showing_previous_gw': self.showing_previous_gw,
                 'fixtures': fixtures,
-                'standings': standings_list
+                'standings': standings_list,
+                'last_updated_utc': datetime.utcnow().isoformat() + 'Z'
             }
             
         except FPLApiError as e:

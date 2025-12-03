@@ -33,12 +33,36 @@
                 {% else %}
                     <span class="status-badge">{{ ar.in_progress }}</span>
                 {% endif %}
+                <span class="update-time">
+                    <span class="update-icon">🕐</span>
+                    <span id="last-updated-time" data-utc="{{ data.last_updated_utc or '' }}">-</span>
+                </span>
                 <button class="refresh-btn" onclick="refreshDashboard()" id="refresh-btn">🔄</button>
                 <a href="/" class="stats-link">🏠</a>
                 <a href="/league/elite/stats" class="stats-link">📊 {{ ar.stats }}</a>
             </div>
         </div>
     </header>
+
+    <script>
+        // Convert UTC time to user's local timezone
+        (function() {
+            const el = document.getElementById('last-updated-time');
+            const utcTime = el ? el.getAttribute('data-utc') : null;
+            if (utcTime) {
+                const date = new Date(utcTime);
+                const options = {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                };
+                el.textContent = date.toLocaleString('en-GB', options).replace(',', ' -');
+            }
+        })();
+    </script>
 
     <!-- Main Content -->
     <main class="main-container">
@@ -293,13 +317,10 @@
         {% endif %}
     </main>
 
-    <!-- Footer (Desktop only) -->
-    <footer class="footer desktop-only">
-        <p>{{ ar.copyright }}</p>
-        {% if data.is_live %}
-            <p class="refresh-note">🔄 {{ ar.auto_refresh }}</p>
-        {% endif %}
-        <p class="timestamp" id="timestamp"></p>
+    <!-- Footer -->
+    <footer style="text-align: center; padding: 2rem; color: #888; font-size: 0.8rem;">
+        <p>دوري النخبة - بطولة عشاق الفانتازي في ليبيا</p>
+        <p style="margin-top: 0.25rem; color: #666;">بطولة H2H للمديرين المتميزين</p>
     </footer>
     
     <script>
