@@ -44,28 +44,7 @@ STANDINGS_BY_GW = {
         "الهلال السوداني": 9,
     },
     # GW13 standings will be added here
-    13: {
-    "العربي القطري": 28,
-    "العين": 27,
-    "القوة الجوية": 24,
-    "نيوم": 24,
-    "الفتح السعودي": 24,
-    "اتحاد العاصمة": 22,
-    "المريخ": 19,
-    "النجم الساحلي": 18,
-    "الترجي": 18,
-    "النصر السعودي": 18,
-    "الجزيرة الإماراتي": 16,
-    "الرجاء": 15,
-    "الأفريقي": 15,
-    "الوداد": 15,
-    "الأهلي المصري": 15,
-    "الاتحاد السعودي": 15,
-    "الهلال السعودي": 12,
-    "شبيبة القبائل": 12,
-    "الهلال السوداني": 12,
-    "أربيل": 9,
-    }
+    # 13: { ... }
 }
 
 def get_base_standings_hardcoded(current_gw):
@@ -553,10 +532,36 @@ def get_arab_league_data():
                 if picks_data:
                     picks = picks_data.get('picks', [])
                     
+                    # Find captain info for this manager
+                    captain_id = next((p['element'] for p in picks if p.get('is_captain')), None)
+                    vice_captain_id = next((p['element'] for p in picks if p.get('is_vice_captain')), None)
+                    
+                    # Check if captain played
+                    captain_minutes = live_elements.get(captain_id, {}).get('minutes', 0) if captain_id else 0
+                    captain_team = player_info.get(captain_id, {}).get('team') if captain_id else None
+                    captain_played = captain_minutes > 0
+                    captain_team_done = is_game_complete_or_postponed(captain_team) if captain_team else False
+                    
+                    # Determine effective captain (captain or vice-captain if captain DNP)
+                    effective_captain_id = None
+                    if captain_played:
+                        effective_captain_id = captain_id
+                    elif captain_team_done and not captain_played:
+                        # Captain DNP, check vice-captain
+                        vc_minutes = live_elements.get(vice_captain_id, {}).get('minutes', 0) if vice_captain_id else 0
+                        if vc_minutes > 0:
+                            effective_captain_id = vice_captain_id
+                    elif not captain_team_done:
+                        # Captain's game not done yet, assume captain will play
+                        effective_captain_id = captain_id
+                    
                     # Simulate auto-subs and count final XI players
                     final_xi = simulate_autosubs_for_xi(picks)
                     for pid in final_xi:
                         picks_counter[pid] += 1
+                        # Count captain twice (since they get 2x points)
+                        if pid == effective_captain_id:
+                            picks_counter[pid] += 1
                     
                     pts, cap_name, _ = calculate_points_from_picks(picks_data, entry_id)
                     total_pts += pts
